@@ -477,6 +477,14 @@ if (!empty($_SERVER['HTTP_HOST'])) {
 }
 $appUrl = 'http://' . $host . ':' . $APP_PORT . '/';
 
+/* Официальная иконка Poznote: те же контуры, что и в poznote.svg / poznote-white.svg /
+   poznote-black.svg проекта Poznote. Цвет задаётся через currentColor. */
+$pozMark = '<path d="M945 5113 c-56 -8 -170 -45 -230 -75 -255 -128 -416 -361 -444 -647 -15 -142 -15 -3520 0 -3662 33 -335 245 -592 574 -700 68 -22 85 -23 494 -26 369 -4 430 -2 466 11 165 63 171 292 10 367 -37 17 -71 19 -401 19 -200 0 -385 5 -414 10 -151 29 -261 124 -311 268 -18 53 -19 114 -19 1882 0 1768 1 1829 19 1882 50 144 160 239 311 268 33 6 502 10 1295 10 793 0 1262 -4 1295 -10 152 -29 272 -134 315 -278 12 -39 15 -159 15 -679 l0 -633 -1345 0 c-1485 0 -1383 4 -1453 -63 -20 -20 -39 -52 -48 -84 -14 -48 -14 -58 0 -107 18 -62 70 -116 132 -136 31 -11 327 -12 1501 -7 1597 6 1486 2 1545 64 15 15 37 51 50 78 l23 50 3 684 c2 418 -1 724 -7 786 -34 339 -242 594 -576 706 l-70 23 -1350 2 c-742 1 -1363 -1 -1380 -3z"/><path d="M1190 3904 c-56 -24 -99 -73 -116 -131 -14 -48 -14 -58 0 -106 9 -32 28 -64 48 -84 69 -67 -3 -63 1175 -63 1018 0 1070 1 1108 19 157 73 157 289 0 362 -38 18 -89 19 -1110 18 -933 0 -1074 -2 -1105 -15z"/><path d="M4101 2380 c-156 -42 -153 -40 -800 -684 -377 -376 -599 -604 -608 -626 -15 -35 -222 -708 -248 -808 -35 -131 58 -261 186 -262 51 0 866 227 914 255 22 13 301 286 621 607 525 527 584 590 616 653 48 94 69 180 69 285 0 208 -97 389 -269 502 -97 63 -181 89 -307 94 -79 3 -116 0 -174 -16z m264 -417 c103 -72 112 -227 18 -315 l-29 -28 -139 140 -140 140 36 36 c70 70 175 81 254 27z m-658 -991 l-368 -368 -200 -55 c-115 -33 -199 -51 -199 -45 0 6 25 92 55 191 l55 180 372 372 373 373 140 -140 140 -140 -368 -368z"/><path d="M1190 2304 c-56 -24 -99 -73 -116 -131 -14 -48 -14 -58 0 -106 9 -32 28 -64 48 -84 67 -65 40 -63 768 -63 722 0 701 -2 763 58 43 41 60 81 60 142 0 84 -45 151 -125 184 -55 24 -1345 23 -1398 0z"/>';
+$pozFavicon = 'data:image/svg+xml,' . rawurlencode(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">'
+    . '<g transform="translate(0,512) scale(0.1,-0.1)" fill="#007AB5">' . $pozMark . '</g></svg>'
+);
+
 $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
 ?>
 <!doctype html>
@@ -485,6 +493,7 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Poznote</title>
+<link rel="icon" href="<?php echo poz_htmlesc($pozFavicon); ?>">
 <script>
 /* Тема применяется до первой отрисовки, иначе страница «мигает» белым. */
 (function () {
@@ -555,8 +564,10 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
             gap:12px; flex-wrap:wrap; padding:8px 12px; margin-bottom:10px;
             border:1px solid var(--line); border-bottom:2px solid var(--accent); background:var(--card); }
   .brand { display:flex; align-items:center; gap:10px; }
-  .logo { width:34px; height:34px; flex:0 0 34px; display:flex; align-items:center; justify-content:center;
-          background:var(--accent); color:var(--accent-text); font-size:16px; font-weight:bold; }
+  .logo { width:32px; height:32px; flex:0 0 32px; display:flex; align-items:center; justify-content:center;
+          color:#007ab5; }
+  .logo svg { width:30px; height:30px; display:block; fill:currentColor; }
+  [data-theme="dark"] .logo { color:#5cb7e6; }
   .brand h1 { font-size:15px; margin:0; font-weight:bold; letter-spacing:.14em; text-transform:uppercase; }
   .brand small { display:block; margin-top:1px; color:var(--muted); font-size:11px; }
   .topright { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
@@ -667,7 +678,7 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
 
   <div class="topbar">
     <div class="brand">
-      <div class="logo">P</div>
+      <span class="logo" aria-hidden="true"><svg viewBox="0 0 512 512"><?php echo $pozMark; ?></svg></span>
       <div>
         <h1>Poznote</h1>
         <small>Заметки, папки, задачи и поиск — на вашем NAS</small>
