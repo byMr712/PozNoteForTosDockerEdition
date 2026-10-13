@@ -10,7 +10,7 @@
 1:folder:images/icons:
 1:file:images/icons/Poznote.png:0712fdc3c32d51cfe540afc4f0274a86
 1:folder:init.d:
-1:file:init.d/service:228758b6d5e82cd609ddbbc5992ee1cc
-1:file:Poznote.lang:72b99767429a9d781b6df042c8147bce
-1:file:version:924394f57e9d68199206ab1f2a0ce7b9
-1:file:webui.bz2:160515f322cfbe873a1732173e243d23
+1:file:init.d/service:70aed3c728d57fd0ff80047564918b8c
+1:file:Poznote.lang:7e1564738835fe5af0cd13ba0fc8e781
+1:file:version:f28670af0915ae5ef7f7d5f82c9f9979
+1:file:webui.bz2:1a3a0dfe38b112f13c07bbb86d1f80cf

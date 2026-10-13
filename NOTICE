@@ -22,8 +22,9 @@ removed from or added to the upstream application.
 
 Assets
 ======
-The logo (images/poznote-icon.png) and the screenshot (images/PoznoteForTos.png)
-are taken from the Poznote project and are covered by the same MIT License.
+The logo (images/poznote-icon.png) is taken from the Poznote project and is
+covered by the same MIT License. The screenshots of the TOS module page
+(images/PoznoteForTosDockerEdition*_ru.png) were made by the package author.
 
 Third-party components
 ======================

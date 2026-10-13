@@ -98,6 +98,255 @@ function poz_running(string $status): bool
 }
 
 /* ------------------------------------------------------------------ */
+/* Язык интерфейса (ru/en): cookie → ?lang= → Accept-Language → en     */
+/* ------------------------------------------------------------------ */
+
+/*
+ * Словарь страницы: одна строка на ключ, без апострофов и обратных слэшей —
+ * так его читают и глазами, и простым парсером (см. инструмент превью).
+ * Подстановки — {0}, {1}…: их заменяет poz_t(). Порядок ключей в ru и en
+ * одинаковый, поэтому словари удобно сверять построчно.
+ */
+$POZ_STRINGS = array(
+    'ru' => array(
+        'page_title' => 'Poznote — панель управления',
+        'tagline' => 'Заметки, папки, задачи и поиск — на вашем NAS',
+        'theme_dark' => 'Тёмная тема',
+        'theme_light' => 'Светлая тема',
+        'theme_aria' => 'Переключить тему',
+        'lang_other' => 'Переключить на английский',
+        'lang_aria' => 'Переключить язык (RU/EN)',
+        'running' => 'Работает',
+        'stopped' => 'Остановлен',
+        'open_app' => 'Открыть Poznote',
+        'progress_default' => 'Выполняется…',
+        'progress_running' => 'Выполняется: {0}',
+        'op_fallback' => 'операция',
+        'seconds' => '{0} с',
+        'card_control' => 'Управление',
+        'hint_control' => 'Служба управляет контейнерами Poznote и MCP',
+        'group_service' => 'Служба',
+        'group_maintenance' => 'Обслуживание',
+        'btn_start' => 'Запустить',
+        'btn_start_label' => 'Запуск',
+        'btn_start_hint' => 'Запускаются контейнеры и панель управления.',
+        'btn_restart' => 'Перезапустить',
+        'btn_restart_label' => 'Перезапуск',
+        'btn_restart_hint' => 'Служба останавливается и запускается заново.',
+        'btn_stop' => 'Остановить',
+        'btn_stop_label' => 'Остановка',
+        'btn_stop_hint' => 'Останавливаются контейнеры Poznote и MCP.',
+        'btn_update' => 'Обновить образы',
+        'btn_update_label' => 'Обновление образов',
+        'btn_update_hint' => 'Скачиваются свежие образы Poznote и MCP, затем контейнеры перезапускаются. Это может занять несколько минут.',
+        'btn_reset' => 'Пересоздать контейнеры',
+        'btn_reset_label' => 'Пересоздание контейнеров',
+        'btn_reset_hint' => 'Контейнеры удаляются и создаются заново. Данные (SQLite, вложения) сохраняются.',
+        'note_ui' => 'Веб-интерфейс:',
+        'note_update_1' => '«Обновить образы» скачивает свежие версии контейнеров Poznote и MCP и перезапускает их.',
+        'note_update_2' => 'Во время операции журнал ниже обновляется автоматически.',
+        'card_ports' => 'Порты',
+        'hint_ports' => 'Панель запишет значения в poznote.env и перезапустит Poznote',
+        'label_web' => 'Веб-интерфейс',
+        'label_mcp' => 'MCP-сервер (127.0.0.1)',
+        'btn_saveports' => 'Сохранить и перезапустить',
+        'btn_saveports_label' => 'Смена портов',
+        'btn_saveports_hint' => 'Настройки сохраняются в poznote.env, затем Poznote перезапускается на новых портах.',
+        'note_ports_1' => 'Если порт занят другой программой (или недоступен из-за фаервола), укажите здесь свободный — панель сама запишет его в настройки и перезапустит Poznote.',
+        'note_ports_2' => 'Порты 8040 и 8045 должны быть свободны; панель управления использует внутренний порт {0} (только localhost).',
+        'card_status' => 'Статус',
+        'refresh' => 'Обновить статус',
+        'refresh_title' => 'Обновить статус и журнал',
+        'no_data' => 'Нет данных',
+        'card_log' => 'Журнал службы',
+        'log_hint' => '· последние {0} строк',
+        'log_empty' => 'Журнал пуст.',
+        'btn_clear' => 'Очистить',
+        'btn_clear_label' => 'Очистка журнала',
+        'btn_clear_hint' => 'Журнал службы будет очищен (только файл журнала, контейнеры не затрагиваются).',
+        'role_web' => 'Веб',
+        'role_mcp' => 'MCP',
+        'port_free' => '{0} {1} — свободен',
+        'port_ours' => '{0} {1} — занят Poznote',
+        'port_foreign' => '{0} {1} — занят',
+        'denied_title' => 'Poznote — доступ запрещён',
+        'denied_h' => 'Доступ запрещён',
+        'denied_p' => 'Войдите в TOS под учётной записью суперпользователя, созданной при настройке NAS, и откройте модуль повторно.',
+        'denied_ajax' => 'Доступ запрещён. Войдите в TOS под суперпользователем.',
+        'err_web_port' => 'Порт веб-интерфейса должен быть числом от 1 до 65535.',
+        'err_mcp_port' => 'Порт MCP-сервера должен быть числом от 1 до 65535.',
+        'err_same_port' => 'Порт веб-интерфейса и порт MCP должны различаться.',
+        'err_panel_port' => 'Порты не должны совпадать с портом панели управления ({0}).',
+        'err_web_busy' => 'Порт {0} уже занят{1}. Выберите другой порт.',
+        'err_mcp_busy' => 'Порт {0} уже занят{1}. Выберите другой порт.',
+        'ok_ports_saved' => 'Порты сохранены ({0} / {1}), Poznote перезапущен.',
+        'err_env_write' => 'Не удалось записать {0}. Проверьте права на каталог настроек.',
+        'msg_start' => 'Poznote запущен.',
+        'msg_stop' => 'Poznote остановлен.',
+        'msg_restart' => 'Poznote перезапущен.',
+        'msg_update' => 'Образы обновлены, контейнеры перезапущены.',
+        'msg_reset' => 'Контейнеры пересозданы (данные сохранены).',
+        'msg_clearlog' => 'Журнал службы очищен.',
+        'msg_unknown' => 'Неизвестное действие.',
+        'done' => 'Готово.',
+        'error' => 'Ошибка.',
+        'ajax_fail' => 'Не удалось выполнить запрос: {0}',
+    ),
+    'en' => array(
+        'page_title' => 'Poznote — control panel',
+        'tagline' => 'Notes, folders, tasks and search — on your NAS',
+        'theme_dark' => 'Dark theme',
+        'theme_light' => 'Light theme',
+        'theme_aria' => 'Switch theme',
+        'lang_other' => 'Switch to Russian',
+        'lang_aria' => 'Switch language (RU/EN)',
+        'running' => 'Running',
+        'stopped' => 'Stopped',
+        'open_app' => 'Open Poznote',
+        'progress_default' => 'Working…',
+        'progress_running' => 'Working: {0}',
+        'op_fallback' => 'operation',
+        'seconds' => '{0} s',
+        'card_control' => 'Control',
+        'hint_control' => 'The service manages the Poznote and MCP containers',
+        'group_service' => 'Service',
+        'group_maintenance' => 'Maintenance',
+        'btn_start' => 'Start',
+        'btn_start_label' => 'Starting',
+        'btn_start_hint' => 'The containers and the control panel are started.',
+        'btn_restart' => 'Restart',
+        'btn_restart_label' => 'Restarting',
+        'btn_restart_hint' => 'The service is stopped and started again.',
+        'btn_stop' => 'Stop',
+        'btn_stop_label' => 'Stopping',
+        'btn_stop_hint' => 'The Poznote and MCP containers are stopped.',
+        'btn_update' => 'Update images',
+        'btn_update_label' => 'Updating images',
+        'btn_update_hint' => 'Fresh Poznote and MCP images are pulled and the containers are restarted. This may take a few minutes.',
+        'btn_reset' => 'Recreate containers',
+        'btn_reset_label' => 'Recreating containers',
+        'btn_reset_hint' => 'The containers are removed and created again. Your data (SQLite, attachments) is kept.',
+        'note_ui' => 'Web UI:',
+        'note_update_1' => 'Update images pulls the latest Poznote and MCP container images and restarts them.',
+        'note_update_2' => 'While the operation runs, the log below refreshes automatically.',
+        'card_ports' => 'Ports',
+        'hint_ports' => 'The panel writes the values to poznote.env and restarts Poznote',
+        'label_web' => 'Web UI',
+        'label_mcp' => 'MCP server (127.0.0.1)',
+        'btn_saveports' => 'Save and restart',
+        'btn_saveports_label' => 'Changing ports',
+        'btn_saveports_hint' => 'The settings are written to poznote.env, then Poznote restarts on the new ports.',
+        'note_ports_1' => 'If a port is held by another program (or blocked by the firewall), enter a free one — the panel saves it and restarts Poznote.',
+        'note_ports_2' => 'Ports 8040 and 8045 must be free; the control panel uses the internal port {0} (localhost only).',
+        'card_status' => 'Status',
+        'refresh' => 'Refresh status',
+        'refresh_title' => 'Refresh status and log',
+        'no_data' => 'No data',
+        'card_log' => 'Service log',
+        'log_hint' => '· last {0} lines',
+        'log_empty' => 'The log is empty.',
+        'btn_clear' => 'Clear',
+        'btn_clear_label' => 'Clearing the log',
+        'btn_clear_hint' => 'The service log will be cleared (the log file only, containers are not touched).',
+        'role_web' => 'Web',
+        'role_mcp' => 'MCP',
+        'port_free' => '{0} {1} — free',
+        'port_ours' => '{0} {1} — held by Poznote',
+        'port_foreign' => '{0} {1} — held',
+        'denied_title' => 'Poznote — access denied',
+        'denied_h' => 'Access denied',
+        'denied_p' => 'Sign in to TOS with the superuser account created during NAS setup, then open the module again.',
+        'denied_ajax' => 'Access denied. Sign in to TOS as the superuser.',
+        'err_web_port' => 'The web UI port must be a number from 1 to 65535.',
+        'err_mcp_port' => 'The MCP server port must be a number from 1 to 65535.',
+        'err_same_port' => 'The web UI port and the MCP port must be different.',
+        'err_panel_port' => 'The ports must not clash with the control panel port ({0}).',
+        'err_web_busy' => 'Port {0} is already in use{1}. Choose another port.',
+        'err_mcp_busy' => 'Port {0} is already in use{1}. Choose another port.',
+        'ok_ports_saved' => 'Ports saved ({0} / {1}), Poznote restarted.',
+        'err_env_write' => 'Could not write {0}. Check the permissions of the settings directory.',
+        'msg_start' => 'Poznote started.',
+        'msg_stop' => 'Poznote stopped.',
+        'msg_restart' => 'Poznote restarted.',
+        'msg_update' => 'Images updated, the containers were restarted.',
+        'msg_reset' => 'Containers recreated (data kept).',
+        'msg_clearlog' => 'The service log has been cleared.',
+        'msg_unknown' => 'Unknown action.',
+        'done' => 'Done.',
+        'error' => 'Error.',
+        'ajax_fail' => 'Request failed: {0}',
+    ),
+);
+
+/** Язык интерфейса: cookie poznote_lang → ?lang= → Accept-Language → en. */
+function poz_lang(): string
+{
+    $allowed = array('ru', 'en');
+
+    $want = '';
+    if (!empty($_COOKIE['poznote_lang'])) {
+        $want = (string)$_COOKIE['poznote_lang'];
+    } elseif (!empty($_GET['lang'])) {
+        $want = (string)$_GET['lang'];
+    }
+    $want = strtolower(str_replace('_', '-', trim($want)));
+    $want = preg_replace('/[^a-z-].*$/', '', $want);
+    if (in_array($want, $allowed, true)) {
+        return $want;
+    }
+    $short = preg_replace('/-.*$/', '', $want);
+    if (in_array($short, $allowed, true)) {
+        return $short;
+    }
+
+    // Явного выбора нет — смотрим Accept-Language и берём язык с наибольшим q.
+    $header = isset($_SERVER['HTTP_ACCEPT_LANGUAGE']) ? (string)$_SERVER['HTTP_ACCEPT_LANGUAGE'] : '';
+    $best  = '';
+    $bestQ = 0.0;
+    foreach (explode(',', $header) as $item) {
+        $item = trim($item);
+        if ($item === '') {
+            continue;
+        }
+        $bits = explode(';', $item);
+        $tag  = strtolower(str_replace('_', '-', trim($bits[0])));
+        $tag  = preg_replace('/[^a-z-].*$/', '', $tag);
+        $q    = 1.0;
+        if (isset($bits[1]) && preg_match('/^\s*q\s*=\s*([0-9.]+)/i', $bits[1], $m)) {
+            $q = (float)$m[1];
+        }
+        if ($q <= 0.0 || $q <= $bestQ) {
+            continue;
+        }
+        $short = preg_replace('/-.*$/', '', $tag);
+        $code  = in_array($tag, $allowed, true) ? $tag
+               : (in_array($short, $allowed, true) ? $short : '');
+        if ($code !== '') {
+            $best  = $code;
+            $bestQ = $q;
+        }
+    }
+
+    // Браузер молчит или просит неподдерживаемый язык: английский как общий.
+    return $best !== '' ? $best : 'en';
+}
+
+$POZ_LANG = poz_lang();
+$POZ_T    = $POZ_STRINGS[$POZ_LANG];
+
+/** Строка интерфейса на языке страницы: poz_t('ключ', array('значение')). */
+function poz_t(string $key, array $args = array()): string
+{
+    global $POZ_T;
+    $s = isset($POZ_T[$key]) ? (string)$POZ_T[$key] : $key;
+    foreach ($args as $i => $v) {
+        $s = str_replace('{' . $i . '}', (string)$v, $s);
+    }
+    return $s;
+}
+
+
+/* ------------------------------------------------------------------ */
 /* Настройки портов (poznote.env — тот же файл читает служба пакета)   */
 /* ------------------------------------------------------------------ */
 
@@ -283,19 +532,19 @@ function poz_ports_state(string $initd, string $web, string $mcp, string $panel)
 function poz_ports_tags(array $state): string
 {
     $tags = array();
-    foreach (array('web' => 'Веб', 'mcp' => 'MCP') as $role => $label) {
+    foreach (array('web' => poz_t('role_web'), 'mcp' => poz_t('role_mcp')) as $role => $label) {
         if (!isset($state[$role])) {
             continue;
         }
         $p = $state[$role];
         if (!$p['busy']) {
-            $text = $label . ' ' . $p['port'] . ' — свободен';
+            $text = poz_t('port_free', array($label, $p['port']));
             $cls  = 'ok';
         } elseif (!empty($p['ours'])) {
-            $text = $label . ' ' . $p['port'] . ' — занят Poznote';
+            $text = poz_t('port_ours', array($label, $p['port']));
             $cls  = 'ok';
         } else {
-            $text = $label . ' ' . $p['port'] . ' — занят'
+            $text = poz_t('port_foreign', array($label, $p['port']))
                 . ($p['owner'] !== '' ? ' (' . $p['owner'] . ')' : '');
             $cls = 'bad';
         }
@@ -322,17 +571,17 @@ $cookieS = isset($_COOKIE['loginStatus']) ? (string)$_COOKIE['loginStatus'] : ''
 if ($tosUser === '' || $cookieU !== $tosUser || $cookieS !== 'true') {
     if ($isAjax) {
         http_response_code(403);
-        poz_json(array('ok' => false, 'message' => 'Доступ запрещён. Войдите в TOS под суперпользователем.'));
+        poz_json(array('ok' => false, 'message' => poz_t('denied_ajax')));
     }
     http_response_code(403);
     ?>
 <!doctype html>
-<html lang="ru"><head><meta charset="utf-8"><title>Poznote — доступ запрещён</title>
+<html lang="<?php echo poz_htmlesc($POZ_LANG); ?>"><head><meta charset="utf-8"><title><?php echo poz_htmlesc(poz_t('denied_title')); ?></title>
 <style>body{margin:0;background:#f3f1ea;color:#24211c;font-family:ui-monospace,"Cascadia Mono",Consolas,"DejaVu Sans Mono",monospace;font-size:13px;line-height:1.5}.card{max-width:560px;margin:80px auto;background:#fffdf8;border:1px solid #ded8ca;border-left:3px solid #a8362a;padding:20px}.card h2{margin:0 0 10px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#a8362a}.card p{margin:0;color:#5b5449}@media (prefers-color-scheme:dark){body{background:#14161a;color:#e8e6e1}.card{background:#1b1e23;border-color:#2e333b;border-left-color:#e2725b}.card h2{color:#e2725b}.card p{color:#a49e94}}</style>
 </head><body>
 <div class="card">
-  <h2>Доступ запрещён</h2>
-  <p>Войдите в TOS под учётной записью суперпользователя, созданной при настройке NAS, и откройте модуль повторно.</p>
+  <h2><?php echo poz_htmlesc(poz_t('denied_h')); ?></h2>
+  <p><?php echo poz_htmlesc(poz_t('denied_p')); ?></p>
 </div>
 </body></html>
     <?php
@@ -370,19 +619,19 @@ if ($action === 'saveports') {
     $err = '';
 
     if (!preg_match('/^\d{1,5}$/', $web) || (int)$web < 1 || (int)$web > 65535) {
-        $err = 'Порт веб-интерфейса должен быть числом от 1 до 65535.';
+        $err = poz_t('err_web_port');
     } elseif (!preg_match('/^\d{1,5}$/', $mcp) || (int)$mcp < 1 || (int)$mcp > 65535) {
-        $err = 'Порт MCP-сервера должен быть числом от 1 до 65535.';
+        $err = poz_t('err_mcp_port');
     } elseif ($web === $mcp) {
-        $err = 'Порт веб-интерфейса и порт MCP должны различаться.';
+        $err = poz_t('err_same_port');
     } elseif ((int)$web === (int)$PANEL_PORT || (int)$mcp === (int)$PANEL_PORT) {
-        $err = 'Порты не должны совпадать с портом панели управления (' . $PANEL_PORT . ').';
+        $err = poz_t('err_panel_port', array($PANEL_PORT));
     } elseif ((int)$web !== (int)$APP_PORT && poz_port_in_use((int)$web)) {
         $who = poz_port_owner((int)$web);
-        $err = 'Порт ' . $web . ' уже занят' . ($who !== '' ? ' — ' . $who : '') . '. Выберите другой порт.';
+        $err = poz_t('err_web_busy', array($web, $who !== '' ? ' — ' . $who : ''));
     } elseif ((int)$mcp !== (int)$MCP_PORT && poz_port_in_use((int)$mcp)) {
         $who = poz_port_owner((int)$mcp);
-        $err = 'Порт ' . $mcp . ' уже занят' . ($who !== '' ? ' — ' . $who : '') . '. Выберите другой порт.';
+        $err = poz_t('err_mcp_busy', array($mcp, $who !== '' ? ' — ' . $who : ''));
     }
 
     if ($err !== '') {
@@ -397,7 +646,7 @@ if ($action === 'saveports') {
         $vars['POZNOTE_MCP_PORT'] = $mcp;
         ksort($vars);
         if (!poz_env_write($ENV_FILE, $vars)) {
-            $notice = 'Не удалось записать ' . $ENV_FILE . '. Проверьте права на каталог настроек.';
+            $notice = poz_t('err_env_write', array($ENV_FILE));
             $noticeKind = 'err';
             if ($isAjax) {
                 poz_json(array('ok' => false, 'action' => $action, 'message' => $notice));
@@ -407,7 +656,7 @@ if ($action === 'saveports') {
             $ENV_VARS = poz_env_read($ENV_FILE);
             $APP_PORT = $web;
             $MCP_PORT = $mcp;
-            $notice = 'Порты сохранены (' . $web . ' / ' . $mcp . '), Poznote перезапущен.';
+            $notice = poz_t('ok_ports_saved', array($web, $mcp));
             $noticeKind = 'ok';
             if ($isAjax) {
                 $status = poz_status($INITD);
@@ -430,14 +679,14 @@ if ($action !== '' && $action !== 'saveports') {
     $cmd = '';
     $msg = '';
     switch ($action) {
-        case 'start':   $cmd = 'start';  $msg = 'Poznote запущен.';                                   break;
-        case 'stop':    $cmd = 'stop';   $msg = 'Poznote остановлен.';                                 break;
-        case 'restart': $cmd = 'reload'; $msg = 'Poznote перезапущен.';                                break;
-        case 'update':  $cmd = 'update'; $msg = 'Образы обновлены, контейнеры перезапущены.';          break;
-        case 'reset':   $cmd = 'reset';  $msg = 'Контейнеры пересозданы (данные сохранены).';          break;
-        case 'clearlog': $cmd = 'clearlog'; $msg = 'Журнал службы очищен.';                             break;
+        case 'start':    $cmd = 'start';    $msg = poz_t('msg_start');    break;
+        case 'stop':     $cmd = 'stop';     $msg = poz_t('msg_stop');     break;
+        case 'restart':  $cmd = 'reload';   $msg = poz_t('msg_restart');  break;
+        case 'update':   $cmd = 'update';   $msg = poz_t('msg_update');   break;
+        case 'reset':    $cmd = 'reset';    $msg = poz_t('msg_reset');    break;
+        case 'clearlog': $cmd = 'clearlog'; $msg = poz_t('msg_clearlog'); break;
         default:
-            $notice = 'Неизвестное действие.';
+            $notice = poz_t('msg_unknown');
             $noticeKind = 'err';
     }
 
@@ -490,11 +739,11 @@ $pozFavicon = 'data:image/svg+xml,' . rawurlencode(
 $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
 ?>
 <!doctype html>
-<html lang="ru">
+<html lang="<?php echo poz_htmlesc($POZ_LANG); ?>">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Poznote</title>
+<title><?php echo poz_htmlesc(poz_t('page_title')); ?></title>
 <link rel="icon" href="<?php echo poz_htmlesc($pozFavicon); ?>">
 <script>
 /* Тема применяется до первой отрисовки, иначе страница «мигает» белым. */
@@ -506,6 +755,19 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
   }
   document.documentElement.setAttribute('data-theme', t);
 })();
+</script>
+
+<script>
+/* Словарь интерфейса отдаётся из PHP, чтобы тексты жили в одном месте. */
+var POZ_LANG = <?php echo (json_encode($POZ_LANG) ?: '"en"'); ?>;
+var POZ_T    = <?php echo (json_encode($POZ_T, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '{}'); ?>;
+function T(key, args) {
+  var s = (POZ_T && typeof POZ_T[key] === 'string') ? POZ_T[key] : key;
+  if (args) {
+    for (var i = 0; i < args.length; i++) { s = s.replace('{' + i + '}', String(args[i])); }
+  }
+  return s;
+}
 </script>
 <style>
   /* ==================================================================
@@ -684,18 +946,19 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
       <span class="logo" aria-hidden="true"><svg viewBox="0 0 512 512"><?php echo $pozMark; ?></svg></span>
       <div>
         <h1>Poznote</h1>
-        <small>Заметки, папки, задачи и поиск — на вашем NAS</small>
+        <small><?php echo poz_htmlesc(poz_t('tagline')); ?></small>
       </div>
     </div>
     <div class="topright">
-      <button type="button" class="btn icon" id="themeBtn" title="Тёмная тема" aria-label="Переключить тему">
+      <button type="button" class="btn icon" id="themeBtn" title="<?php echo poz_htmlesc(poz_t('theme_dark')); ?>" aria-label="<?php echo poz_htmlesc(poz_t('theme_aria')); ?>">
         <svg class="i i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>
         <svg class="i i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>
       </button>
-      <span id="pill" class="pill <?php echo $running ? 'on' : 'off'; ?>"><?php echo $running ? 'Работает' : 'Остановлен'; ?></span>
+      <button type="button" class="btn icon" id="langBtn" title="<?php echo poz_htmlesc(poz_t('lang_other')); ?>" aria-label="<?php echo poz_htmlesc(poz_t('lang_aria')); ?>"><?php echo $POZ_LANG === 'ru' ? 'EN' : 'RU'; ?></button>
+      <span id="pill" class="pill <?php echo $running ? 'on' : 'off'; ?>"><?php echo poz_htmlesc($running ? poz_t('running') : poz_t('stopped')); ?></span>
       <a class="btn primary applink" href="<?php echo poz_htmlesc($appUrl); ?>" target="_blank" rel="noopener">
         <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-8.5 8.5"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
-        Открыть Poznote
+        <?php echo poz_htmlesc(poz_t('open_app')); ?>
       </a>
     </div>
   </div>
@@ -705,88 +968,88 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
   <div id="progress" class="card progress" hidden>
     <div class="spinner" aria-hidden="true"></div>
     <div>
-      <div class="ptxt" id="progressText">Выполняется…</div>
+      <div class="ptxt" id="progressText"><?php echo poz_htmlesc(poz_t('progress_default')); ?></div>
       <div class="phint" id="progressHint"></div>
       <div class="pstep" id="progressStep"></div>
     </div>
-    <div class="ptime" id="progressTime">0 с</div>
+    <div class="ptime" id="progressTime"><?php echo poz_htmlesc(poz_t('seconds', array(0))); ?></div>
   </div>
 
   <div class="grid">
 
   <div class="card g-ctrl">
     <div class="cardhead">
-      <h2>Управление</h2>
-      <span class="hint">Служба управляет контейнерами Poznote и MCP</span>
+      <h2><?php echo poz_htmlesc(poz_t('card_control')); ?></h2>
+      <span class="hint"><?php echo poz_htmlesc(poz_t('hint_control')); ?></span>
     </div>
 
     <div class="group">
-      <span class="grouplabel">Служба</span>
+      <span class="grouplabel"><?php echo poz_htmlesc(poz_t('group_service')); ?></span>
       <div class="btnrow">
-        <form method="post"><input type="hidden" name="action" value="start"><button class="btn go" type="submit" data-action="start" data-label="Запуск" data-hint="Запускаются контейнеры и панель управления."><svg class="i solid" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 4.8 19 12 7.5 19.2z"/></svg>Запустить</button></form>
-        <form method="post"><input type="hidden" name="action" value="restart"><button class="btn" type="submit" data-action="restart" data-label="Перезапуск" data-hint="Служба останавливается и запускается заново."><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.6 4.6v5.2h-5.2"/></svg>Перезапустить</button></form>
-        <form method="post"><input type="hidden" name="action" value="stop"><button class="btn danger" type="submit" data-action="stop" data-label="Остановка" data-hint="Останавливаются контейнеры Poznote и MCP."><svg class="i solid" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="6.5" width="11" height="11" rx="2.5"/></svg>Остановить</button></form>
+        <form method="post"><input type="hidden" name="action" value="start"><button class="btn go" type="submit" data-action="start" data-label="<?php echo poz_htmlesc(poz_t('btn_start_label')); ?>" data-hint="<?php echo poz_htmlesc(poz_t('btn_start_hint')); ?>"><svg class="i solid" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 4.8 19 12 7.5 19.2z"/></svg><?php echo poz_htmlesc(poz_t('btn_start')); ?></button></form>
+        <form method="post"><input type="hidden" name="action" value="restart"><button class="btn" type="submit" data-action="restart" data-label="<?php echo poz_htmlesc(poz_t('btn_restart_label')); ?>" data-hint="<?php echo poz_htmlesc(poz_t('btn_restart_hint')); ?>"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.6 4.6v5.2h-5.2"/></svg><?php echo poz_htmlesc(poz_t('btn_restart')); ?></button></form>
+        <form method="post"><input type="hidden" name="action" value="stop"><button class="btn danger" type="submit" data-action="stop" data-label="<?php echo poz_htmlesc(poz_t('btn_stop_label')); ?>" data-hint="<?php echo poz_htmlesc(poz_t('btn_stop_hint')); ?>"><svg class="i solid" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="6.5" width="11" height="11" rx="2.5"/></svg><?php echo poz_htmlesc(poz_t('btn_stop')); ?></button></form>
       </div>
     </div>
 
     <div class="group">
-      <span class="grouplabel">Обслуживание</span>
+      <span class="grouplabel"><?php echo poz_htmlesc(poz_t('group_maintenance')); ?></span>
       <div class="btnrow">
-        <form method="post"><input type="hidden" name="action" value="update"><button class="btn warn" type="submit" data-action="update" data-label="Обновление образов" data-hint="Скачиваются свежие образы Poznote и MCP, затем контейнеры перезапускаются. Это может занять несколько минут."><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v11"/><path d="M7.5 10.5 12 15l4.5-4.5"/><path d="M4.5 19.5h15"/></svg>Обновить образы</button></form>
-        <form method="post"><input type="hidden" name="action" value="reset"><button class="btn" type="submit" data-action="reset" data-label="Пересоздание контейнеров" data-hint="Контейнеры удаляются и создаются заново. Данные (SQLite, вложения) сохраняются."><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 8 12 3.5 20.5 8v8L12 20.5 3.5 16z"/><path d="M3.5 8 12 12.5 20.5 8"/><path d="M12 12.5v8"/></svg>Пересоздать контейнеры</button></form>
+        <form method="post"><input type="hidden" name="action" value="update"><button class="btn warn" type="submit" data-action="update" data-label="<?php echo poz_htmlesc(poz_t('btn_update_label')); ?>" data-hint="<?php echo poz_htmlesc(poz_t('btn_update_hint')); ?>"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v11"/><path d="M7.5 10.5 12 15l4.5-4.5"/><path d="M4.5 19.5h15"/></svg><?php echo poz_htmlesc(poz_t('btn_update')); ?></button></form>
+        <form method="post"><input type="hidden" name="action" value="reset"><button class="btn" type="submit" data-action="reset" data-label="<?php echo poz_htmlesc(poz_t('btn_reset_label')); ?>" data-hint="<?php echo poz_htmlesc(poz_t('btn_reset_hint')); ?>"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 8 12 3.5 20.5 8v8L12 20.5 3.5 16z"/><path d="M3.5 8 12 12.5 20.5 8"/><path d="M12 12.5v8"/></svg><?php echo poz_htmlesc(poz_t('btn_reset')); ?></button></form>
       </div>
     </div>
 
     <p class="cardnote">
-      Веб-интерфейс: <a class="applink appurl" href="<?php echo poz_htmlesc($appUrl); ?>" target="_blank" rel="noopener"><?php echo poz_htmlesc($appUrl); ?></a>.
-      «Обновить образы» скачивает свежие версии контейнеров Poznote и MCP и перезапускает их.
-      Во время операции журнал ниже обновляется автоматически.
+      <?php echo poz_htmlesc(poz_t('note_ui')); ?> <a class="applink appurl" href="<?php echo poz_htmlesc($appUrl); ?>" target="_blank" rel="noopener"><?php echo poz_htmlesc($appUrl); ?></a>.
+      <?php echo poz_htmlesc(poz_t('note_update_1')); ?>
+      <?php echo poz_htmlesc(poz_t('note_update_2')); ?>
     </p>
   </div>
 
   <div class="card g-ports">
     <div class="cardhead">
-      <h2>Порты</h2>
-      <span class="hint">Панель запишет значения в poznote.env и перезапустит Poznote</span>
+      <h2><?php echo poz_htmlesc(poz_t('card_ports')); ?></h2>
+      <span class="hint"><?php echo poz_htmlesc(poz_t('hint_ports')); ?></span>
     </div>
     <form method="post" id="portsForm">
       <input type="hidden" name="action" value="saveports">
       <div class="fields">
         <div class="field">
-          <label for="webPort">Веб-интерфейс</label>
+          <label for="webPort"><?php echo poz_htmlesc(poz_t('label_web')); ?></label>
           <input type="text" inputmode="numeric" id="webPort" name="web_port" maxlength="5" value="<?php echo poz_htmlesc((string)$APP_PORT); ?>">
         </div>
         <div class="field">
-          <label for="mcpPort">MCP-сервер (127.0.0.1)</label>
+          <label for="mcpPort"><?php echo poz_htmlesc(poz_t('label_mcp')); ?></label>
           <input type="text" inputmode="numeric" id="mcpPort" name="mcp_port" maxlength="5" value="<?php echo poz_htmlesc((string)$MCP_PORT); ?>">
         </div>
-        <button class="btn warn" type="submit" data-action="saveports" data-label="Смена портов" data-hint="Настройки сохраняются в poznote.env, затем Poznote перезапускается на новых портах."><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 10 17.5 19.5 6.5"/></svg>Сохранить и перезапустить</button>
+        <button class="btn warn" type="submit" data-action="saveports" data-label="<?php echo poz_htmlesc(poz_t('btn_saveports_label')); ?>" data-hint="<?php echo poz_htmlesc(poz_t('btn_saveports_hint')); ?>"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 10 17.5 19.5 6.5"/></svg><?php echo poz_htmlesc(poz_t('btn_saveports')); ?></button>
       </div>
     </form>
     <div id="portsBox" class="ports"><?php echo poz_ports_tags(poz_ports_state($INITD, $APP_PORT, $MCP_PORT, $PANEL_PORT)); ?></div>
     <p class="cardnote">
-      Если порт занят другой программой (или недоступен из-за фаервола), укажите здесь свободный — панель сама запишет его в настройки и перезапустит Poznote.
-      Порты 8040 и 8045 должны быть свободны; панель управления использует внутренний порт <?php echo poz_htmlesc((string)$PANEL_PORT); ?> (только localhost).
+      <?php echo poz_htmlesc(poz_t('note_ports_1')); ?>
+      <?php echo poz_htmlesc(poz_t('note_ports_2', array($PANEL_PORT))); ?>
     </p>
   </div>
 
   <div class="card g-status">
     <div class="cardhead">
-      <h2>Статус</h2>
-      <button type="button" class="btn sm ghost right" id="refreshBtn" title="Обновить статус и журнал">
-        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.4 6.3"/><path d="M20 4.8v5.4h-5.4"/></svg>Обновить статус
+      <h2><?php echo poz_htmlesc(poz_t('card_status')); ?></h2>
+      <button type="button" class="btn sm ghost right" id="refreshBtn" title="<?php echo poz_htmlesc(poz_t('refresh_title')); ?>">
+        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.4 6.3"/><path d="M20 4.8v5.4h-5.4"/></svg><?php echo poz_htmlesc(poz_t('refresh')); ?>
       </button>
     </div>
-    <pre class="status" id="statusBox"><?php echo poz_htmlesc($status !== '' ? $status : 'Нет данных'); ?></pre>
+    <pre class="status" id="statusBox"><?php echo poz_htmlesc($status !== '' ? $status : poz_t('no_data')); ?></pre>
   </div>
 
   <div class="card g-log">
     <div class="cardhead">
-      <h2>Журнал службы</h2>
-      <span class="hint"><?php echo poz_htmlesc(basename($LOG_FILE)); ?> · последние <?php echo (int)$LOG_LINES; ?> строк</span>
-      <form method="post"><input type="hidden" name="action" value="clearlog"><button class="btn sm ghost" type="submit" data-action="clearlog" data-label="Очистка журнала" data-hint="Журнал службы будет очищен (только файл журнала, контейнеры не затрагиваются)."><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M9.5 7V4.5h5V7"/><path d="M6.5 7l.9 12.5h9.2L17.5 7"/></svg>Очистить</button></form>
+      <h2><?php echo poz_htmlesc(poz_t('card_log')); ?></h2>
+      <span class="hint"><?php echo poz_htmlesc(basename($LOG_FILE)); ?> <?php echo poz_htmlesc(poz_t('log_hint', array((int)$LOG_LINES))); ?></span>
+      <form method="post"><input type="hidden" name="action" value="clearlog"><button class="btn sm ghost" type="submit" data-action="clearlog" data-label="<?php echo poz_htmlesc(poz_t('btn_clear_label')); ?>" data-hint="<?php echo poz_htmlesc(poz_t('btn_clear_hint')); ?>"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M9.5 7V4.5h5V7"/><path d="M6.5 7l.9 12.5h9.2L17.5 7"/></svg><?php echo poz_htmlesc(poz_t('btn_clear')); ?></button></form>
     </div>
-    <textarea id="logBox" readonly><?php echo poz_htmlesc($logTail !== '' ? $logTail : 'Журнал пуст.'); ?></textarea>
+    <textarea id="logBox" readonly><?php echo poz_htmlesc($logTail !== '' ? $logTail : poz_t('log_empty')); ?></textarea>
   </div>
 
   </div><!-- /.grid -->
@@ -810,6 +1073,7 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
 
   var buttons = Array.prototype.slice.call(document.querySelectorAll('button[data-action]'));
   var themeBtn  = document.getElementById('themeBtn');
+  var langBtn   = document.getElementById('langBtn');
 
   /* Светлая/тёмная тема. Выбор хранится в localStorage, поэтому сохраняется
      между открытиями страницы; при первом входе берётся системная настройка. */
@@ -817,7 +1081,7 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
     document.documentElement.setAttribute('data-theme', t);
     try { localStorage.setItem('poznote-theme', t); } catch (e) {}
     if (themeBtn) {
-      var label = (t === 'dark') ? 'Светлая тема' : 'Тёмная тема';
+      var label = (t === 'dark') ? T('theme_light') : T('theme_dark');
       themeBtn.title = label;
       themeBtn.setAttribute('aria-label', label);
     }
@@ -830,6 +1094,18 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
       applyTheme(currentTheme() === 'dark' ? 'light' : 'dark');
     });
     applyTheme(currentTheme());
+  }
+
+  /* Язык: кнопка ставит cookie poznote_lang и перезагружает страницу —
+     так выбор сохраняется и применяется сразу, без правок в PHP. */
+  if (langBtn) {
+    langBtn.addEventListener('click', function () {
+      var next = (POZ_LANG === 'ru') ? 'en' : 'ru';
+      var d = new Date();
+      d.setTime(d.getTime() + 365 * 24 * 60 * 60 * 1000);
+      document.cookie = 'poznote_lang=' + next + '; expires=' + d.toUTCString() + '; path=/; SameSite=Lax';
+      location.reload();
+    });
   }
 
   /* Подгонка по высоте: если содержимое не влезает в окно модуля, аккуратно
@@ -895,20 +1171,20 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
   // Метки «свободен/занят» — те же, что рендерит PHP при загрузке страницы.
   function portsTags(ports) {
     if (!ports || !portsBox) { return; }
-    var roles = [['web', 'Веб'], ['mcp', 'MCP']];
+    var roles = [['web', T('role_web')], ['mcp', T('role_mcp')]];
     var out = [];
     roles.forEach(function (r) {
       var p = ports[r[0]];
       if (!p) { return; }
       var text, cls;
       if (!p.busy) {
-        text = r[1] + ' ' + p.port + ' — свободен';
+        text = T('port_free', [r[1], p.port]);
         cls = 'ok';
       } else if (p.ours) {
-        text = r[1] + ' ' + p.port + ' — занят Poznote';
+        text = T('port_ours', [r[1], p.port]);
         cls = 'ok';
       } else {
-        text = r[1] + ' ' + p.port + ' — занят' + (p.owner ? ' (' + p.owner + ')' : '');
+        text = T('port_foreign', [r[1], p.port]) + (p.owner ? ' (' + p.owner + ')' : '');
         cls = 'bad';
       }
       out.push('<span class="ptag ' + cls + '">' + esc(text) + '</span>');
@@ -947,15 +1223,15 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
   function applyStatus(data) {
     if (!data) return;
     if (typeof data.running !== 'undefined') {
-      pill.textContent = data.running ? 'Работает' : 'Остановлен';
+      pill.textContent = data.running ? T('running') : T('stopped');
       pill.className = 'pill ' + (data.running ? 'on' : 'off');
     }
     if (typeof data.status !== 'undefined') {
-      statusBox.textContent = data.status || 'Нет данных';
+      statusBox.textContent = data.status || T('no_data');
     }
     portsTags(data.ports);
     if (typeof data.log !== 'undefined') {
-      logBox.value = data.log || 'Журнал пуст.';
+      logBox.value = data.log || T('log_empty');
       logBox.scrollTop = logBox.scrollHeight;
       if (busy) { pStep.textContent = lastLine(data.log); }
     }
@@ -979,7 +1255,7 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
     buttons.forEach(function (b) { b.disabled = on; });
     refreshBtn.disabled = on;
     if (on) {
-      pText.textContent = 'Выполняется: ' + (label || 'операция');
+      pText.textContent = T('progress_running', [label || T('op_fallback')]);
       pHint.textContent = hint || '';
       pStep.textContent = '';
       progress.hidden = false;
@@ -998,7 +1274,7 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
 
   function updateElapsed() {
     var s = Math.max(0, Math.round((Date.now() - startAt) / 1000));
-    pTime.textContent = s + ' с';
+    pTime.textContent = T('seconds', [s]);
   }
 
   function runAction(action, label, hint, form) {
@@ -1021,12 +1297,12 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
       setRate(10000);
       applyStatus(d);
       if (d && d.ports && d.ports.web) { setAppPort(d.ports.web); }
-      setNotice(!!d.ok, d.message || (d.ok ? 'Готово.' : 'Ошибка.'));
+      setNotice(!!d.ok, d.message || (d.ok ? T('done') : T('error')));
       tick();
     }).catch(function (e) {
       setBusy(false);
       setRate(10000);
-      setNotice(false, 'Не удалось выполнить запрос: ' + e);
+      setNotice(false, T('ajax_fail', [e]));
       tick();
     });
   }
