@@ -534,7 +534,7 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
   [hidden] { display:none !important; }
   body { margin:0; background:var(--bg); color:var(--text);
          font-family:var(--mono); font-size:13px; line-height:1.5; }
-  .wrap { max-width:1600px; margin:0 auto; padding:12px 14px 16px; counter-reset:sec; }
+  .wrap { max-width:1600px; margin:0 auto; padding:18px 14px 16px; counter-reset:sec; }
 
   /* ---------- Сетка: широкое окно — две колонки ---------- */
   .grid { display:grid; gap:10px; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); }
