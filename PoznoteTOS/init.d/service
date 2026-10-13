@@ -2,7 +2,7 @@
 # Poznote TOS service (Docker wrapper + control panel)
 # start|stop|reload|update|status|reset|inst_version|dep_check
 
-VERSION="6.117.0.2"
+VERSION="6.117.0.3"
 MOD_NAME=Poznote
 
 ROOTUSER=$(id -un)

@@ -528,14 +528,29 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
   * { box-sizing:border-box; }
   [hidden] { display:none !important; }
   body { margin:0; background:var(--bg); color:var(--text); font-family:Verdana,Arial,Helvetica,sans-serif; font-size:13px; }
-  .wrap { max-width:980px; margin:0 auto; padding:18px 18px 40px; }
+  .wrap { max-width:1440px; margin:0 auto; padding:12px 14px 14px; }
+
+  /* ---------- Сетка: широкое окно — две колонки ---------- */
+  .grid { display:grid; gap:12px; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); }
+  .grid > .card { margin-bottom:0; }
+  .grid .g-ctrl   { grid-column:1; grid-row:1; }
+  .grid .g-ports  { grid-column:2; grid-row:1; }
+  .grid .g-status { grid-column:1; grid-row:2; }
+  .grid .g-log    { grid-column:2; grid-row:2; }
+  /* Консольные блоки занимают свободную высоту своей карточки. */
+  .grid .g-status, .grid .g-log { display:flex; flex-direction:column; }
+  .grid .g-status pre.status, .grid .g-log textarea { flex:1 1 auto; min-height:132px; max-height:none; height:auto; }
+  @media (max-width:900px) {
+    .grid { grid-template-columns:1fr; }
+    .grid .g-ctrl, .grid .g-ports, .grid .g-status, .grid .g-log { grid-column:1; grid-row:auto; }
+  }
 
   /* ---------- Верхняя панель ---------- */
   .topbar { position:sticky; top:0; z-index:20; display:flex; align-items:center; justify-content:space-between;
-            gap:14px; flex-wrap:wrap; padding:12px 16px; margin-bottom:14px; border:1px solid var(--line);
+            gap:14px; flex-wrap:wrap; padding:10px 14px; margin-bottom:12px; border:1px solid var(--line);
             border-radius:var(--radius); background:var(--card); box-shadow:var(--shadow); }
-  .brand { display:flex; align-items:center; gap:12px; }
-  .logo { width:42px; height:42px; flex:0 0 42px; border-radius:11px; color:#fff; font-size:21px; font-weight:bold;
+  .brand { display:flex; align-items:center; gap:11px; }
+  .logo { width:38px; height:38px; flex:0 0 38px; border-radius:10px; color:#fff; font-size:19px; font-weight:bold;
           display:flex; align-items:center; justify-content:center;
           background:linear-gradient(135deg,var(--accent),#7aa8ff); box-shadow:0 4px 10px rgba(47,111,237,.28); }
   .brand h1 { font-size:18px; margin:0; letter-spacing:.2px; }
@@ -549,9 +564,9 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
   .pill.off { background:#8a939e; }
 
   /* ---------- Карточки ---------- */
-  .card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:16px;
-          margin-bottom:14px; box-shadow:var(--shadow); }
-  .cardhead { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 12px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:14px;
+          margin-bottom:12px; box-shadow:var(--shadow); }
+  .cardhead { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 10px; }
   .cardhead h2 { font-size:12px; margin:0; color:var(--head); text-transform:uppercase; letter-spacing:.6px; }
   .cardhead .hint { margin-left:auto; color:var(--muted); font-size:11.5px; text-align:right; }
   .cardhead .right { margin-left:auto; }
@@ -612,7 +627,7 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
                   color:var(--console-text); border:1px solid var(--console-line); border-radius:9px; padding:10px;
                   margin:0; white-space:pre-wrap; word-break:break-word; }
   pre.status { max-height:180px; overflow:auto; }
-  textarea { height:320px; resize:vertical; }
+  textarea { height:220px; min-height:120px; resize:vertical; }
   .notice { padding:10px 12px; border-radius:9px; margin-bottom:14px; font-weight:bold; }
   .notice.ok { background:var(--ok-bg); border:1px solid var(--ok-line); color:var(--ok-text); }
   .notice.err { background:var(--err-bg); border:1px solid var(--err-line); color:var(--err-text); }
@@ -631,7 +646,7 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="wrap" id="fit">
 
   <div class="topbar">
     <div class="brand">
@@ -666,7 +681,9 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
     <div class="ptime" id="progressTime">0 с</div>
   </div>
 
-  <div class="card">
+  <div class="grid">
+
+  <div class="card g-ctrl">
     <div class="cardhead">
       <h2>Управление</h2>
       <span class="hint">Служба управляет контейнерами Poznote и MCP</span>
@@ -696,7 +713,7 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
     </p>
   </div>
 
-  <div class="card">
+  <div class="card g-ports">
     <div class="cardhead">
       <h2>Порты</h2>
       <span class="hint">Панель запишет значения в poznote.env и перезапустит Poznote</span>
@@ -722,7 +739,7 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
     </p>
   </div>
 
-  <div class="card">
+  <div class="card g-status">
     <div class="cardhead">
       <h2>Статус</h2>
       <button type="button" class="btn sm ghost right" id="refreshBtn" title="Обновить статус и журнал">
@@ -732,7 +749,7 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
     <pre class="status" id="statusBox"><?php echo poz_htmlesc($status !== '' ? $status : 'Нет данных'); ?></pre>
   </div>
 
-  <div class="card">
+  <div class="card g-log">
     <div class="cardhead">
       <h2>Журнал службы</h2>
       <span class="hint"><?php echo poz_htmlesc(basename($LOG_FILE)); ?> · последние <?php echo (int)$LOG_LINES; ?> строк</span>
@@ -740,6 +757,8 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
     </div>
     <textarea id="logBox" readonly><?php echo poz_htmlesc($logTail !== '' ? $logTail : 'Журнал пуст.'); ?></textarea>
   </div>
+
+  </div><!-- /.grid -->
 
 </div>
 
@@ -781,6 +800,37 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
     });
     applyTheme(currentTheme());
   }
+
+  /* Подгонка по высоте: если содержимое не влезает в окно модуля, аккуратно
+     уменьшаем масштаб (не сильнее 0.7), чтобы не пришлось прокручивать. */
+  var fit = document.getElementById('fit');
+  var fitTimer = null;
+
+  function fitToWindow() {
+    if (!fit) { return; }
+    fit.style.zoom = '';
+    fit.style.width = '';
+    var avail = (window.innerHeight || document.documentElement.clientHeight) - 24;
+    var need  = fit.offsetHeight;
+    if (avail < 120 || need < 120) { return; }
+    var s = avail / need;
+    if (s > 0.995) { return; }                 // влезает как есть — не масштабируем
+    var z = Math.round(Math.max(0.7, s) * 1000) / 1000;
+    fit.style.zoom = String(z);
+    // zoom уменьшает и ширину, поэтому компенсируем её — колонки не «съёживаются» дважды
+    fit.style.width = (100 / z) + '%';
+  }
+
+  function scheduleFit() {
+    if (fitTimer) { clearTimeout(fitTimer); }
+    fitTimer = setTimeout(fitToWindow, 80);
+  }
+
+  window.addEventListener('resize', scheduleFit);
+  window.addEventListener('load', scheduleFit);
+  if (window.MutationObserver && fit) {
+    new MutationObserver(scheduleFit).observe(fit, { childList: true, subtree: true, characterData: true });
+  }
   var tickTimer = null;
   var startAt = 0;
   var elapsedTimer = null;
@@ -800,10 +850,11 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
   }
 
   function setNotice(ok, msg) {
-    if (!msg) { notice.hidden = true; return; }
+    if (!msg) { notice.hidden = true; scheduleFit(); return; }
     notice.hidden = false;
     notice.className = 'notice ' + (ok ? 'ok' : 'err');
     notice.textContent = msg;
+    scheduleFit();
   }
 
   function esc(s) {
@@ -877,6 +928,7 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
       logBox.scrollTop = logBox.scrollHeight;
       if (busy) { pStep.textContent = lastLine(data.log); }
     }
+    scheduleFit();
   }
 
   function tick() {
@@ -910,6 +962,7 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
       pStep.textContent = '';
       if (elapsedTimer) { clearInterval(elapsedTimer); elapsedTimer = null; }
     }
+    scheduleFit();
   }
 
   function updateElapsed() {
@@ -966,6 +1019,7 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
 
   setRate(10000);
   tick();
+  scheduleFit();
 })();
 </script>
 </body>
