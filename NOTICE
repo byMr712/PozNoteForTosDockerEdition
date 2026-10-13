@@ -1,0 +1,33 @@
+Poznote
+=======
+Copyright (c) 2025 Timothé Poznanski
+Licensed under the MIT License.
+Project: https://github.com/timothepoznanski/poznote
+
+TerraMaster TPK packaging
+=========================
+TPK module author: Mr712
+    https://github.com/byMr712/PozNoteForTos
+
+Modifications
+=============
+This repository contains a TerraMaster TOS6/TOS7 wrapper around the official
+Poznote Docker images (https://github.com/timothepoznanski/poznote). The
+application itself is not bundled: the images
+    ghcr.io/timothepoznanski/poznote
+    ghcr.io/timothepoznanski/poznote-mcp
+are pulled on the NAS at first start. The packaging adds the TOS service script,
+the desktop module page (webui.bz2) and the Go control panel; nothing was
+removed from or added to the upstream application.
+
+Assets
+======
+The logo (images/poznote-icon.png) and the screenshot (images/PoznoteForTos.png)
+are taken from the Poznote project and are covered by the same MIT License.
+
+Third-party components
+======================
+XZ Utils (tools/xz/, build-time only, not part of the .tpk)
+    xz CLI  : GNU General Public License v2 or later
+    liblzma : 0BSD
+    See tools/xz/COPYING, tools/xz/COPYING.0BSD, tools/xz/COPYING.GPLv2.
