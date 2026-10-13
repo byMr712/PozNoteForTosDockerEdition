@@ -1,4 +1,4 @@
-# Poznote — TPK package for TerraMaster (TOS6/TOS7)
+# Poznote Docker Edition — TPK package for TerraMaster (TOS6/TOS7)
 
 > **Language:** English · [Русский](README.md)
 
@@ -17,6 +17,8 @@
 </div>
 
 - Ready-to-use **Poznote 6.117.0.0-beta** package for x86_64 TerraMaster NAS (TOS6/TOS7).
+- This is the **Docker Edition**: the application runs in containers built from the official Docker
+  images, and the package itself does not bundle them — so the app is updated independently of the package.
 - This repository contains releases, the package tree, build tools, and everything needed to rebuild the package.
 
 ## Credits
@@ -112,6 +114,25 @@ write routine lines to `/usr/local/Poznote/Poznote_start.log`.
 
 The page is accessible to the TOS superuser account only (the same policy as for TerraMaster's own
 modules).
+
+### Desktop icon
+
+TOS normally creates the desktop **Poznote** icon itself when the package is installed. If the icon
+is missing (for example after a package update, or on some TOS builds), add it manually:
+
+1. On the TOS desktop open **Start** → **All applications** (in TOS7 — the Start menu / All
+   applications entry in the top navigation bar).
+2. Find **Poznote** there and either **drag** the icon onto the desktop, or right-click it and
+   choose **Add to desktop** (on some builds — **Pin to the navigation bar**).
+
+The icon opens `http://<NAS>/Poznote/` — the path comes from `config.ini` (`path = /Poznote/`,
+`type = iframe`, `icon = /images/icons/Poznote.png`). If the icon cannot be created for some
+reason, the module page is still reachable directly at `http://<NAS>/Poznote/`, and the
+application itself at `http://<NAS>:8040/`.
+
+Everything the page needs is fixed up by the service on every start (`register_web_module` in
+`init.d/service`): the `/usr/www/Poznote` → `webui/` symlink, the superuser-only nginx snippet and
+the icon file `/usr/www/images/icons/Poznote.png`. No manual NAS file work is required.
 
 ## Ports and settings
 
