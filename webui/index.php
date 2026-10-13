@@ -98,7 +98,7 @@ function poz_running(string $status): bool
 }
 
 /* ------------------------------------------------------------------ */
-/* Язык интерфейса (ru/en): cookie → ?lang= → Accept-Language → en     */
+/* Язык интерфейса (ru/en): cookie → ?lang= → en (по умолчанию — англ.)  */
 /* ------------------------------------------------------------------ */
 
 /*
@@ -278,7 +278,7 @@ $POZ_STRINGS = array(
     ),
 );
 
-/** Язык интерфейса: cookie poznote_lang → ?lang= → Accept-Language → en. */
+/** Язык интерфейса: cookie poznote_lang → ?lang= → en (язык по умолчанию). */
 function poz_lang(): string
 {
     $allowed = array('ru', 'en');
@@ -299,36 +299,8 @@ function poz_lang(): string
         return $short;
     }
 
-    // Явного выбора нет — смотрим Accept-Language и берём язык с наибольшим q.
-    $header = isset($_SERVER['HTTP_ACCEPT_LANGUAGE']) ? (string)$_SERVER['HTTP_ACCEPT_LANGUAGE'] : '';
-    $best  = '';
-    $bestQ = 0.0;
-    foreach (explode(',', $header) as $item) {
-        $item = trim($item);
-        if ($item === '') {
-            continue;
-        }
-        $bits = explode(';', $item);
-        $tag  = strtolower(str_replace('_', '-', trim($bits[0])));
-        $tag  = preg_replace('/[^a-z-].*$/', '', $tag);
-        $q    = 1.0;
-        if (isset($bits[1]) && preg_match('/^\s*q\s*=\s*([0-9.]+)/i', $bits[1], $m)) {
-            $q = (float)$m[1];
-        }
-        if ($q <= 0.0 || $q <= $bestQ) {
-            continue;
-        }
-        $short = preg_replace('/-.*$/', '', $tag);
-        $code  = in_array($tag, $allowed, true) ? $tag
-               : (in_array($short, $allowed, true) ? $short : '');
-        if ($code !== '') {
-            $best  = $code;
-            $bestQ = $q;
-        }
-    }
-
-    // Браузер молчит или просит неподдерживаемый язык: английский как общий.
-    return $best !== '' ? $best : 'en';
+    // Ни cookie, ни ?lang= ничего не выбрали: английский по умолчанию.
+    return 'en';
 }
 
 $POZ_LANG = poz_lang();
