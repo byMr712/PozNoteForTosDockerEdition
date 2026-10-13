@@ -485,64 +485,173 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Poznote</title>
+<script>
+/* Тема применяется до первой отрисовки, иначе страница «мигает» белым. */
+(function () {
+  var t = null;
+  try { t = localStorage.getItem('poznote-theme'); } catch (e) {}
+  if (t !== 'dark' && t !== 'light') {
+    t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+  }
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
 <style>
-  :root { --accent:#2f6fed; --ok:#1e9e57; --err:#c0392b; --bg:#eef1f5; --card:#ffffff; --line:#d8dde5; }
+  /* ---------- Палитра: светлая тема (по умолчанию) ---------- */
+  :root {
+    color-scheme: light;
+    --radius:12px;
+    --accent:#2f6fed; --accent2:#5b93ff;
+    --bg:#eef1f5; --card:#ffffff; --card2:#f7f9fc; --line:#dbe1ea;
+    --text:#1f2733; --head:#414b5a; --muted:#6b7480;
+    --btn-bg:#ffffff; --btn-bg-hover:#f2f6fd; --btn-line:#dbe1ea;
+    --ok-bg:#e7f6ec; --ok-bg-h:#dcf2e5; --ok-line:#b6e3c6; --ok-text:#166b3d;
+    --err-bg:#fdecea; --err-bg-h:#fbdfdb; --err-line:#f0c3bc; --err-text:#9b2c20;
+    --warn-bg:#fff6e8; --warn-bg-h:#fdefdb; --warn-line:#f0c48a; --warn-text:#8a5a10;
+    --shadow:0 1px 3px rgba(16,24,40,.06);
+    --console-bg:#0f1620; --console-text:#d7e3f2; --console-line:#22303f;
+  }
+  /* ---------- Палитра: тёмная тема ---------- */
+  [data-theme="dark"] {
+    color-scheme: dark;
+    --accent:#4d8dff; --accent2:#7aa8ff;
+    --bg:#11151c; --card:#1a2029; --card2:#212936; --line:#2c3542;
+    --text:#e6ebf2; --head:#aab6c6; --muted:#98a3b3;
+    --btn-bg:#222b36; --btn-bg-hover:#2b3542; --btn-line:#37424f;
+    --ok-bg:#16301f; --ok-bg-h:#1c3d28; --ok-line:#2c5c3d; --ok-text:#7fd2a0;
+    --err-bg:#33191a; --err-bg-h:#3f2021; --err-line:#6d3230; --err-text:#f0a9a1;
+    --warn-bg:#332913; --warn-bg-h:#3f3218; --warn-line:#6b5527; --warn-text:#e8c07a;
+    --shadow:0 1px 3px rgba(0,0,0,.45);
+    --console-bg:#0b1119; --console-text:#cfe0f0; --console-line:#243040;
+  }
+
   * { box-sizing:border-box; }
   [hidden] { display:none !important; }
-  body { margin:0; background:var(--bg); color:#222; font-family:Verdana,Arial,Helvetica,sans-serif; font-size:13px; }
-  .wrap { max-width:960px; margin:0 auto; padding:18px; }
-  .head { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:Verdana,Arial,Helvetica,sans-serif; font-size:13px; }
+  .wrap { max-width:980px; margin:0 auto; padding:18px 18px 40px; }
+
+  /* ---------- Верхняя панель ---------- */
+  .topbar { position:sticky; top:0; z-index:20; display:flex; align-items:center; justify-content:space-between;
+            gap:14px; flex-wrap:wrap; padding:12px 16px; margin-bottom:14px; border:1px solid var(--line);
+            border-radius:var(--radius); background:var(--card); box-shadow:var(--shadow); }
   .brand { display:flex; align-items:center; gap:12px; }
-  .logo { width:40px; height:40px; border-radius:9px; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:bold; }
-  .brand h1 { font-size:19px; margin:0; }
-  .brand small { color:#6b7480; }
-  .pill { padding:5px 12px; border-radius:20px; font-weight:bold; font-size:12px; color:#fff; white-space:nowrap; }
-  .pill.on { background:var(--ok); }
+  .logo { width:42px; height:42px; flex:0 0 42px; border-radius:11px; color:#fff; font-size:21px; font-weight:bold;
+          display:flex; align-items:center; justify-content:center;
+          background:linear-gradient(135deg,var(--accent),#7aa8ff); box-shadow:0 4px 10px rgba(47,111,237,.28); }
+  .brand h1 { font-size:18px; margin:0; letter-spacing:.2px; }
+  .brand small { display:block; margin-top:2px; color:var(--muted); font-size:11.5px; }
+  .topright { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+
+  .pill { display:inline-flex; align-items:center; gap:8px; padding:6px 13px; border-radius:999px;
+          color:#fff; font-size:12px; font-weight:bold; white-space:nowrap; }
+  .pill::before { content:""; width:7px; height:7px; border-radius:50%; background:#fff; box-shadow:0 0 0 3px rgba(255,255,255,.3); }
+  .pill.on { background:linear-gradient(135deg,#1e9e57,#3ab877); }
   .pill.off { background:#8a939e; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:14px; box-shadow:0 1px 4px rgba(0,0,0,.04); }
-  .card h2 { font-size:13px; margin:0 0 10px; color:#3a4250; text-transform:uppercase; letter-spacing:.4px; }
-  .actions { display:flex; flex-wrap:wrap; gap:8px; }
+
+  /* ---------- Карточки ---------- */
+  .card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:16px;
+          margin-bottom:14px; box-shadow:var(--shadow); }
+  .cardhead { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 12px; }
+  .cardhead h2 { font-size:12px; margin:0; color:var(--head); text-transform:uppercase; letter-spacing:.6px; }
+  .cardhead .hint { margin-left:auto; color:var(--muted); font-size:11.5px; text-align:right; }
+  .cardhead .right { margin-left:auto; }
+  .cardnote { margin:12px 0 0; color:var(--muted); font-size:11.5px; line-height:1.55; }
+
+  /* ---------- Кнопки ---------- */
+  .btnrow { display:flex; flex-wrap:wrap; gap:8px; }
   form { display:inline; margin:0; }
-  button, .btn { font-family:inherit; font-size:13px; padding:9px 14px; border-radius:7px; border:1px solid var(--line); background:#f7f9fc; color:#222; cursor:pointer; text-decoration:none; display:inline-block; }
-  button:hover, .btn:hover { background:#eef3fb; }
+  button, .btn { display:inline-flex; align-items:center; gap:7px; font-family:inherit; font-size:12.5px;
+                 font-weight:bold; line-height:1; padding:9px 15px; border-radius:9px;
+                 border:1px solid var(--btn-line); background:var(--btn-bg); color:var(--text); cursor:pointer;
+                 text-decoration:none; transition:background .15s, border-color .15s, box-shadow .15s; }
+  button:hover, .btn:hover { background:var(--btn-bg-hover); }
+  button:active, .btn:active { transform:translateY(1px); }
   button:disabled { opacity:.55; cursor:progress; }
-  .btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
-  .btn.primary:hover { background:#255fd0; }
-  .btn.warn { background:#fff4e5; border-color:#f0c48a; }
-  pre, textarea { width:100%; font-family:'Courier New',Courier,monospace; font-size:12px; background:#0f1620; color:#d7e3f2; border:1px solid #22303f; border-radius:8px; padding:10px; margin:0; white-space:pre-wrap; word-break:break-word; }
+  .btn.primary { background:linear-gradient(135deg,var(--accent),var(--accent2)); border-color:var(--accent);
+                 color:#fff; box-shadow:0 2px 8px rgba(47,111,237,.28); }
+  .btn.primary:hover { filter:brightness(1.06); }
+  .btn.go { background:var(--ok-bg); border-color:var(--ok-line); color:var(--ok-text); }
+  .btn.go:hover { background:var(--ok-bg-h); }
+  .btn.warn { background:var(--warn-bg); border-color:var(--warn-line); color:var(--warn-text); }
+  .btn.warn:hover { background:var(--warn-bg-h); }
+  .btn.danger { background:var(--err-bg); border-color:var(--err-line); color:var(--err-text); }
+  .btn.danger:hover { background:var(--err-bg-h); }
+  .btn.sm { padding:7px 11px; font-size:11.5px; font-weight:normal; }
+  .btn.ghost { background:transparent; border-color:transparent; color:var(--muted); }
+  .btn.ghost:hover { background:var(--btn-bg-hover); border-color:transparent; color:var(--text); }
+  .btn.icon { padding:9px 11px; }
+  svg.i { width:14px; height:14px; flex:0 0 14px; fill:none; stroke:currentColor; stroke-width:1.8;
+          stroke-linecap:round; stroke-linejoin:round; }
+  svg.i.solid { fill:currentColor; stroke:none; }
+  /* Иконка темы: в светлой теме показываем «луну» (переключение в тёмную) и наоборот. */
+  svg.i-sun { display:none; }
+  [data-theme="dark"] svg.i-sun { display:inline-block; }
+  [data-theme="dark"] svg.i-moon { display:none; }
+
+  /* ---------- Группы кнопок в «Управлении» ---------- */
+  .group + .group { margin-top:14px; padding-top:14px; border-top:1px dashed var(--line); }
+  .grouplabel { display:block; margin-bottom:8px; color:var(--muted); font-size:11px; font-weight:bold;
+                text-transform:uppercase; letter-spacing:.5px; }
+
+  /* ---------- Порты ---------- */
+  #portsForm { display:block; }
+  .fields { display:flex; flex-wrap:wrap; align-items:flex-end; gap:14px 18px; margin-bottom:12px; }
+  .field { display:flex; flex-direction:column; gap:6px; }
+  .field label { color:var(--muted); font-size:11px; font-weight:bold; text-transform:uppercase; letter-spacing:.4px; }
+  .field input[type=text] { font-family:inherit; font-size:13px; width:92px; padding:8px 10px; text-align:center;
+                            border:1px solid var(--btn-line); border-radius:9px; background:var(--card2); color:var(--text); }
+  .field input[type=text]:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(47,111,237,.18); }
+  .ports { display:flex; flex-wrap:wrap; gap:6px; }
+  .ptag { display:inline-flex; align-items:center; gap:7px; padding:5px 11px; border-radius:999px; font-size:11.5px; }
+  .ptag::before { content:""; width:7px; height:7px; border-radius:50%; background:currentColor; opacity:.75; }
+  .ptag.ok { background:var(--ok-bg); border:1px solid var(--ok-line); color:var(--ok-text); }
+  .ptag.bad { background:var(--err-bg); border:1px solid var(--err-line); color:var(--err-text); }
+
+  /* ---------- Статус, журнал, сообщения ---------- */
+  pre, textarea { width:100%; font-family:'Courier New',Courier,monospace; font-size:12px; background:var(--console-bg);
+                  color:var(--console-text); border:1px solid var(--console-line); border-radius:9px; padding:10px;
+                  margin:0; white-space:pre-wrap; word-break:break-word; }
   pre.status { max-height:180px; overflow:auto; }
   textarea { height:320px; resize:vertical; }
-  .notice { padding:10px 12px; border-radius:8px; margin-bottom:14px; }
-  .notice.ok { background:#e7f6ec; border:1px solid #b6e3c6; color:#1e6b40; }
-  .notice.err { background:#fdecea; border:1px solid #f5c6c0; color:#9b2c20; }
-  .muted { color:#6b7480; }
+  .notice { padding:10px 12px; border-radius:9px; margin-bottom:14px; font-weight:bold; }
+  .notice.ok { background:var(--ok-bg); border:1px solid var(--ok-line); color:var(--ok-text); }
+  .notice.err { background:var(--err-bg); border:1px solid var(--err-line); color:var(--err-text); }
+  .muted { color:var(--muted); }
   .progress { display:flex; align-items:center; gap:14px; }
-  .spinner { width:26px; height:26px; flex:0 0 26px; border:3px solid #cdd8ea; border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; }
+  .spinner { width:26px; height:26px; flex:0 0 26px; border:3px solid var(--btn-line); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; }
   @keyframes spin { to { transform:rotate(360deg); } }
-  .progress .ptxt { font-weight:bold; color:#2a3444; }
-  .progress .ptime { margin-left:auto; font-family:'Courier New',Courier,monospace; color:#6b7480; }
-  .progress .phint { color:#6b7480; margin-top:3px; font-weight:normal; }
-  .progress .pstep { margin-top:5px; color:#8a95a5; font-family:'Courier New',Courier,monospace; font-size:11px; max-width:640px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .portform { display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; margin:0 0 10px; }
-  .portform label { color:#3a4250; font-weight:bold; }
-  .portform input[type=text] { font-family:inherit; font-size:13px; padding:8px 10px; width:84px; border:1px solid var(--line); border-radius:7px; background:#fff; color:#222; }
-  .ptag { display:inline-block; padding:4px 10px; border-radius:14px; font-size:12px; margin:0 6px 6px 0; }
-  .ptag.ok { background:#e7f6ec; border:1px solid #b6e3c6; color:#1e6b40; }
-  .ptag.bad { background:#fdecea; border:1px solid #f5c6c0; color:#9b2c20; }
+  .progress .ptxt { font-weight:bold; }
+  .progress .ptime { margin-left:auto; font-family:'Courier New',Courier,monospace; color:var(--muted); }
+  .progress .phint { color:var(--muted); margin-top:3px; font-weight:normal; }
+  .progress .pstep { margin-top:5px; color:var(--muted); font-family:'Courier New',Courier,monospace; font-size:11px; max-width:640px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  @media (max-width:560px) {
+    .topbar { position:static; }
+    .cardhead .hint { margin-left:0; width:100%; text-align:left; }
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <div class="head">
+  <div class="topbar">
     <div class="brand">
       <div class="logo">P</div>
       <div>
         <h1>Poznote</h1>
-        <small class="muted">Заметки, папки, задачи и поиск — на вашем NAS</small>
+        <small>Заметки, папки, задачи и поиск — на вашем NAS</small>
       </div>
     </div>
-    <span id="pill" class="pill <?php echo $running ? 'on' : 'off'; ?>"><?php echo $running ? 'Работает' : 'Остановлен'; ?></span>
+    <div class="topright">
+      <button type="button" class="btn icon" id="themeBtn" title="Тёмная тема" aria-label="Переключить тему">
+        <svg class="i i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>
+        <svg class="i i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>
+      </button>
+      <span id="pill" class="pill <?php echo $running ? 'on' : 'off'; ?>"><?php echo $running ? 'Работает' : 'Остановлен'; ?></span>
+      <a class="btn primary applink" href="<?php echo poz_htmlesc($appUrl); ?>" target="_blank" rel="noopener">
+        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-8.5 8.5"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
+        Открыть Poznote
+      </a>
+    </div>
   </div>
 
   <div id="notice" class="notice <?php echo poz_htmlesc($noticeKind); ?>"<?php echo $notice === '' ? ' hidden' : ''; ?>><?php echo poz_htmlesc($notice); ?></div>
@@ -558,18 +667,29 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
   </div>
 
   <div class="card">
-    <h2>Управление</h2>
-    <div class="actions">
-      <a class="btn primary applink" href="<?php echo poz_htmlesc($appUrl); ?>" target="_blank" rel="noopener">Открыть Poznote ↗</a>
-      <form method="post"><input type="hidden" name="action" value="update"><button class="btn warn" type="submit" data-action="update" data-label="Обновление образов" data-hint="Скачиваются свежие образы Poznote и MCP, затем контейнеры перезапускаются. Это может занять несколько минут.">Обновить образы</button></form>
-      <form method="post"><input type="hidden" name="action" value="restart"><button class="btn" type="submit" data-action="restart" data-label="Перезапуск" data-hint="Служба останавливается и запускается заново.">Перезапустить</button></form>
-      <form method="post"><input type="hidden" name="action" value="start"><button class="btn" type="submit" data-action="start" data-label="Запуск" data-hint="Запускаются контейнеры и панель управления.">Запустить</button></form>
-      <form method="post"><input type="hidden" name="action" value="stop"><button class="btn" type="submit" data-action="stop" data-label="Остановка" data-hint="Останавливаются контейнеры Poznote и MCP.">Остановить</button></form>
-      <form method="post"><input type="hidden" name="action" value="reset"><button class="btn" type="submit" data-action="reset" data-label="Пересоздание контейнеров" data-hint="Контейнеры удаляются и создаются заново. Данные (SQLite, вложения) сохраняются.">Пересоздать контейнеры</button></form>
-      <button type="button" class="btn" id="refreshBtn">Обновить статус</button>
-      <form method="post"><input type="hidden" name="action" value="clearlog"><button class="btn" type="submit" data-action="clearlog" data-label="Очистка журнала" data-hint="Журнал службы будет очищен (только файл журнала, контейнеры не затрагиваются).">Очистить журнал</button></form>
+    <div class="cardhead">
+      <h2>Управление</h2>
+      <span class="hint">Служба управляет контейнерами Poznote и MCP</span>
     </div>
-    <p class="muted" style="margin:10px 0 0">
+
+    <div class="group">
+      <span class="grouplabel">Служба</span>
+      <div class="btnrow">
+        <form method="post"><input type="hidden" name="action" value="start"><button class="btn go" type="submit" data-action="start" data-label="Запуск" data-hint="Запускаются контейнеры и панель управления."><svg class="i solid" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 4.8 19 12 7.5 19.2z"/></svg>Запустить</button></form>
+        <form method="post"><input type="hidden" name="action" value="restart"><button class="btn" type="submit" data-action="restart" data-label="Перезапуск" data-hint="Служба останавливается и запускается заново."><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.6 4.6v5.2h-5.2"/></svg>Перезапустить</button></form>
+        <form method="post"><input type="hidden" name="action" value="stop"><button class="btn danger" type="submit" data-action="stop" data-label="Остановка" data-hint="Останавливаются контейнеры Poznote и MCP."><svg class="i solid" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="6.5" width="11" height="11" rx="2.5"/></svg>Остановить</button></form>
+      </div>
+    </div>
+
+    <div class="group">
+      <span class="grouplabel">Обслуживание</span>
+      <div class="btnrow">
+        <form method="post"><input type="hidden" name="action" value="update"><button class="btn warn" type="submit" data-action="update" data-label="Обновление образов" data-hint="Скачиваются свежие образы Poznote и MCP, затем контейнеры перезапускаются. Это может занять несколько минут."><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v11"/><path d="M7.5 10.5 12 15l4.5-4.5"/><path d="M4.5 19.5h15"/></svg>Обновить образы</button></form>
+        <form method="post"><input type="hidden" name="action" value="reset"><button class="btn" type="submit" data-action="reset" data-label="Пересоздание контейнеров" data-hint="Контейнеры удаляются и создаются заново. Данные (SQLite, вложения) сохраняются."><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 8 12 3.5 20.5 8v8L12 20.5 3.5 16z"/><path d="M3.5 8 12 12.5 20.5 8"/><path d="M12 12.5v8"/></svg>Пересоздать контейнеры</button></form>
+      </div>
+    </div>
+
+    <p class="cardnote">
       Веб-интерфейс: <a class="applink appurl" href="<?php echo poz_htmlesc($appUrl); ?>" target="_blank" rel="noopener"><?php echo poz_htmlesc($appUrl); ?></a>.
       «Обновить образы» скачивает свежие версии контейнеров Poznote и MCP и перезапускает их.
       Во время операции журнал ниже обновляется автоматически.
@@ -577,29 +697,47 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
   </div>
 
   <div class="card">
-    <h2>Порты</h2>
-    <form method="post" class="portform" id="portsForm">
+    <div class="cardhead">
+      <h2>Порты</h2>
+      <span class="hint">Панель запишет значения в poznote.env и перезапустит Poznote</span>
+    </div>
+    <form method="post" id="portsForm">
       <input type="hidden" name="action" value="saveports">
-      <label for="webPort">Веб-интерфейс</label>
-      <input type="text" inputmode="numeric" id="webPort" name="web_port" maxlength="5" value="<?php echo poz_htmlesc((string)$APP_PORT); ?>">
-      <label for="mcpPort">MCP-сервер (127.0.0.1)</label>
-      <input type="text" inputmode="numeric" id="mcpPort" name="mcp_port" maxlength="5" value="<?php echo poz_htmlesc((string)$MCP_PORT); ?>">
-      <button class="btn warn" type="submit" data-action="saveports" data-label="Смена портов" data-hint="Настройки сохраняются в poznote.env, затем Poznote перезапускается на новых портах.">Сохранить и перезапустить</button>
+      <div class="fields">
+        <div class="field">
+          <label for="webPort">Веб-интерфейс</label>
+          <input type="text" inputmode="numeric" id="webPort" name="web_port" maxlength="5" value="<?php echo poz_htmlesc((string)$APP_PORT); ?>">
+        </div>
+        <div class="field">
+          <label for="mcpPort">MCP-сервер (127.0.0.1)</label>
+          <input type="text" inputmode="numeric" id="mcpPort" name="mcp_port" maxlength="5" value="<?php echo poz_htmlesc((string)$MCP_PORT); ?>">
+        </div>
+        <button class="btn warn" type="submit" data-action="saveports" data-label="Смена портов" data-hint="Настройки сохраняются в poznote.env, затем Poznote перезапускается на новых портах."><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 10 17.5 19.5 6.5"/></svg>Сохранить и перезапустить</button>
+      </div>
     </form>
     <div id="portsBox" class="ports"><?php echo poz_ports_tags(poz_ports_state($INITD, $APP_PORT, $MCP_PORT, $PANEL_PORT)); ?></div>
-    <p class="muted" style="margin:4px 0 0">
+    <p class="cardnote">
       Если порт занят другой программой (или недоступен из-за фаервола), укажите здесь свободный — панель сама запишет его в настройки и перезапустит Poznote.
       Порты 8040 и 8045 должны быть свободны; панель управления использует внутренний порт <?php echo poz_htmlesc((string)$PANEL_PORT); ?> (только localhost).
     </p>
   </div>
 
   <div class="card">
-    <h2>Статус</h2>
+    <div class="cardhead">
+      <h2>Статус</h2>
+      <button type="button" class="btn sm ghost right" id="refreshBtn" title="Обновить статус и журнал">
+        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.4 6.3"/><path d="M20 4.8v5.4h-5.4"/></svg>Обновить статус
+      </button>
+    </div>
     <pre class="status" id="statusBox"><?php echo poz_htmlesc($status !== '' ? $status : 'Нет данных'); ?></pre>
   </div>
 
   <div class="card">
-    <h2>Журнал службы (<?php echo poz_htmlesc(basename($LOG_FILE)); ?>, последние <?php echo (int)$LOG_LINES; ?> строк)</h2>
+    <div class="cardhead">
+      <h2>Журнал службы</h2>
+      <span class="hint"><?php echo poz_htmlesc(basename($LOG_FILE)); ?> · последние <?php echo (int)$LOG_LINES; ?> строк</span>
+      <form method="post"><input type="hidden" name="action" value="clearlog"><button class="btn sm ghost" type="submit" data-action="clearlog" data-label="Очистка журнала" data-hint="Журнал службы будет очищен (только файл журнала, контейнеры не затрагиваются)."><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M9.5 7V4.5h5V7"/><path d="M6.5 7l.9 12.5h9.2L17.5 7"/></svg>Очистить</button></form>
+    </div>
     <textarea id="logBox" readonly><?php echo poz_htmlesc($logTail !== '' ? $logTail : 'Журнал пуст.'); ?></textarea>
   </div>
 
@@ -621,6 +759,28 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
   var refreshBtn= document.getElementById('refreshBtn');
 
   var buttons = Array.prototype.slice.call(document.querySelectorAll('button[data-action]'));
+  var themeBtn  = document.getElementById('themeBtn');
+
+  /* Светлая/тёмная тема. Выбор хранится в localStorage, поэтому сохраняется
+     между открытиями страницы; при первом входе берётся системная настройка. */
+  function applyTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    try { localStorage.setItem('poznote-theme', t); } catch (e) {}
+    if (themeBtn) {
+      var label = (t === 'dark') ? 'Светлая тема' : 'Тёмная тема';
+      themeBtn.title = label;
+      themeBtn.setAttribute('aria-label', label);
+    }
+  }
+  function currentTheme() {
+    return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  }
+  if (themeBtn) {
+    themeBtn.addEventListener('click', function () {
+      applyTheme(currentTheme() === 'dark' ? 'light' : 'dark');
+    });
+    applyTheme(currentTheme());
+  }
   var tickTimer = null;
   var startAt = 0;
   var elapsedTimer = null;
