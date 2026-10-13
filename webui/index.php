@@ -189,6 +189,7 @@ $POZ_STRINGS = array(
         'msg_clearlog' => 'Журнал службы очищен.',
         'msg_unknown' => 'Неизвестное действие.',
         'done' => 'Готово.',
+        'notice_hide' => 'Нажмите, чтобы скрыть',
         'error' => 'Ошибка.',
         'ajax_fail' => 'Не удалось выполнить запрос: {0}',
     ),
@@ -273,6 +274,7 @@ $POZ_STRINGS = array(
         'msg_clearlog' => 'The service log has been cleared.',
         'msg_unknown' => 'Unknown action.',
         'done' => 'Done.',
+        'notice_hide' => 'Click to hide',
         'error' => 'Error.',
         'ajax_fail' => 'Request failed: {0}',
     ),
@@ -889,7 +891,7 @@ function T(key, args) {
   pre, textarea { width:100%; font-family:var(--mono); font-size:11.5px; line-height:1.45; margin:0; padding:9px;
                   background:var(--console-bg); color:var(--console-text); border:1px solid var(--console-line);
                   white-space:pre-wrap; word-break:break-word; }
-  pre.status { max-height:170px; overflow:auto; }
+  pre.status { height:170px; overflow:auto; }
   textarea { height:200px; min-height:110px; resize:vertical; }
   .notice { padding:8px 10px; margin-bottom:10px; border:1px solid var(--line-strong); border-left-width:3px; font-size:11.5px; }
   .notice.ok  { background:var(--ok-bg);  border-color:var(--ok-line);  border-left-color:var(--ok);  color:var(--ok); }
@@ -904,6 +906,16 @@ function T(key, args) {
   .progress .phint { color:var(--muted); margin-top:2px; font-size:11px; font-weight:normal; }
   .progress .pstep { margin-top:3px; color:var(--muted); font-size:10.5px; max-width:760px;
                      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  /* ---------- Плавающая панель сообщений ---------- */
+  /* Прогресс и сообщения вынесены из потока: они не меняют высоту страницы,
+     поэтому подгонка по высоте (zoom) во время операции не пересчитывается
+     и раскладка не «прыгает». Панель появляется поверх нижней части страницы. */
+  .dock { position:fixed; left:14px; right:14px; bottom:14px; z-index:40;
+          display:flex; flex-direction:column; gap:8px; pointer-events:none; }
+  .dock > * { pointer-events:auto; }
+  .dock .notice { margin:0; cursor:pointer; }
+  .dock .progress { margin:0; border-color:var(--line-strong); }
   @media (max-width:560px) {
     .topbar { position:static; }
     .cardhead .hint { margin-left:0; width:100%; text-align:left; }
@@ -933,18 +945,6 @@ function T(key, args) {
         <?php echo poz_htmlesc(poz_t('open_app')); ?>
       </a>
     </div>
-  </div>
-
-  <div id="notice" class="notice <?php echo poz_htmlesc($noticeKind); ?>"<?php echo $notice === '' ? ' hidden' : ''; ?>><?php echo poz_htmlesc($notice); ?></div>
-
-  <div id="progress" class="card progress" hidden>
-    <div class="spinner" aria-hidden="true"></div>
-    <div>
-      <div class="ptxt" id="progressText"><?php echo poz_htmlesc(poz_t('progress_default')); ?></div>
-      <div class="phint" id="progressHint"></div>
-      <div class="pstep" id="progressStep"></div>
-    </div>
-    <div class="ptime" id="progressTime"><?php echo poz_htmlesc(poz_t('seconds', array(0))); ?></div>
   </div>
 
   <div class="grid">
@@ -1026,6 +1026,21 @@ function T(key, args) {
 
   </div><!-- /.grid -->
 
+</div><!-- /.wrap -->
+
+<!-- Прогресс и сообщения — поверх раскладки, вне потока и вне области подгонки:
+     их появление/исчезновение не меняет высоту страницы. -->
+<div class="dock" id="dock">
+  <div id="progress" class="card progress" hidden>
+    <div class="spinner" aria-hidden="true"></div>
+    <div>
+      <div class="ptxt" id="progressText"><?php echo poz_htmlesc(poz_t('progress_default')); ?></div>
+      <div class="phint" id="progressHint"></div>
+      <div class="pstep" id="progressStep"></div>
+    </div>
+    <div class="ptime" id="progressTime"><?php echo poz_htmlesc(poz_t('seconds', array(0))); ?></div>
+  </div>
+  <div id="notice" class="notice <?php echo poz_htmlesc($noticeKind); ?>" title="<?php echo poz_htmlesc(poz_t('notice_hide')); ?>"<?php echo $notice === '' ? ' hidden' : ''; ?>><?php echo poz_htmlesc($notice); ?></div>
 </div>
 
 <script>
@@ -1136,6 +1151,12 @@ function T(key, args) {
     scheduleFit();
   }
 
+  // Сообщение живёт в плавающей панели поверх страницы: по клику убираем,
+  // чтобы оно не закрывало нижнюю часть журнала.
+  if (notice) {
+    notice.addEventListener('click', function () { setNotice(true, ''); });
+  }
+
   function esc(s) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
@@ -1164,10 +1185,12 @@ function T(key, args) {
     portsBox.innerHTML = out.join(' ');
   }
 
-  // После смены порта поправляем ссылку «Открыть Poznote».
+  // После смены порта поправляем ссылку «Открыть Poznote». Само приложение
+  // слушает обычный HTTP, поэтому схему задаём жёстко — http, а не схема страницы
+  // (панель TOS может быть открыта по https, и ссылка тогда ведёт в никуда).
   function setAppPort(port) {
     if (!port) { return; }
-    var url = location.protocol + '//' + location.hostname + ':' + port + '/';
+    var url = 'http://' + location.hostname + ':' + port + '/';
     Array.prototype.slice.call(document.querySelectorAll('.applink')).forEach(function (a) {
       a.href = url;
     });
