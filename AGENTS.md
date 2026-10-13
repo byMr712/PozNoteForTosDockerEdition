@@ -3,7 +3,7 @@
 Инструкции для ИИ-агентов и разработчиков по сборке/обновлению TPK-пакета
 **Poznote** для TerraMaster (TOS6/TOS7).
 
-Репозиторий: `E:\GitHub\PozNoteForTos`
+Репозиторий: `E:\GitHub\PozNoteForTosDockerEdition`
 
 > **Важно:** версия пакета **не захардкожена** в этом документе — она берётся
 > из `PoznoteTOS/version` и `PoznoteTOS/config.ini`. Не подставляйте версию
@@ -60,7 +60,7 @@
 ## 3. Штатная сборка
 
 ```powershell
-cd E:\GitHub\PozNoteForTos
+cd E:\GitHub\PozNoteForTosDockerEdition
 pwsh -NoProfile -File .\tools\build_all.ps1 -GoRoot E:\go1.27.0
 ```
 

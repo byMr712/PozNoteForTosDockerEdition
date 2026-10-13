@@ -267,7 +267,7 @@ pwsh .\tools\build_tpk.ps1
 Штатная сборка всего сразу:
 
 ```powershell
-cd E:\GitHub\PozNoteForTos
+cd E:\GitHub\PozNoteForTosDockerEdition
 pwsh -NoProfile -File .\tools\build_all.ps1 -GoRoot E:\go1.27.0
 ```
 
