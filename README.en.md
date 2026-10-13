@@ -4,7 +4,7 @@
 
 <div align="center">
 
-[![Version](https://img.shields.io/badge/Version-6.117.0.6beta-blue.svg)]()
+[![Version](https://img.shields.io/badge/Version-6.117.0.7beta-blue.svg)]()
 [![Platform](https://img.shields.io/badge/Platform-TOS-blue.svg)]()
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -16,7 +16,7 @@
   <img width="800" alt="Poznote UI" src="/images/PoznoteForTos.png">
 </div>
 
-- Ready-to-use **Poznote 6.117.0.6-beta** package for x86_64 TerraMaster NAS (TOS6/TOS7).
+- Ready-to-use **Poznote 6.117.0.7-beta** package for x86_64 TerraMaster NAS (TOS6/TOS7).
 - This is the **Docker Edition**: the application runs in containers built from the official Docker
   images, and the package itself does not bundle them — so the app is updated independently of the package.
 - This repository contains releases, the package tree, build tools, and everything needed to rebuild the package.
@@ -36,7 +36,7 @@ This package is provided **as is**, without warranties of any kind, either expre
 including, but not limited to, the implied warranties of merchantability, fitness for a particular
 purpose, and non-infringement.
 
-- This package is a **beta** build (6.117.0.6-beta) from a community member and is **not** an
+- This package is a **beta** build (6.117.0.7-beta) from a community member and is **not** an
   official release of TerraMaster or Poznote.
 - Use at your own risk. The author is **not responsible** for data loss, system crashes, downtime,
   or any other consequences of installing and using this package.
@@ -76,7 +76,7 @@ purpose, and non-infringement.
 
 ## Install
 
-1. Download `Poznote_TOS7_TOS6_6.117.0.6-beta-x86_64.tpk`.
+1. Download `Poznote_TOS7_TOS6_6.117.0.7-beta-x86_64.tpk`.
 2. In TOS: **App Center → Settings → Install application manually** (Install from file) and
    pick the `.tpk`.
 3. Wait for the installation to finish. A **Poznote** icon appears on the desktop
@@ -282,7 +282,7 @@ The script will:
 5. take the file name and header version from `config.ini`.
 
 The result is named `<id>_TOS7_TOS6_<version>[-<tag>]-<platform>.tpk`, e.g.
-`Poznote_TOS7_TOS6_6.117.0.6-beta-x86_64.tpk`.
+`Poznote_TOS7_TOS6_6.117.0.7-beta-x86_64.tpk`.
 
 All default paths are **relative to the script folder** `tools\`: package tree `..\PoznoteTOS`,
 output `..`. Intermediates go to the `tools\_build\` scratch folder and are removed afterwards.
@@ -352,7 +352,7 @@ All files are owned by `root:root`.
 
 ```powershell
 # 1. the header md5 must match the payload md5 (offset 10240)
-$b = [IO.File]::ReadAllBytes("$pwd\Poznote_TOS7_TOS6_6.117.0.6-beta-x86_64.tpk")
+$b = [IO.File]::ReadAllBytes("$pwd\Poznote_TOS7_TOS6_6.117.0.7-beta-x86_64.tpk")
 # 2. the payload extracts and its permissions/contents match the package tree
 #    (slice the bytes from offset 10240 and inspect with tar -tvf)
 ```
