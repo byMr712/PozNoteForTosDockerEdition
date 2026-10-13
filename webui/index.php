@@ -328,7 +328,7 @@ if ($tosUser === '' || $cookieU !== $tosUser || $cookieS !== 'true') {
     ?>
 <!doctype html>
 <html lang="ru"><head><meta charset="utf-8"><title>Poznote — доступ запрещён</title>
-<style>body{margin:0;font-family:Verdana,Arial,sans-serif;background:#eef1f5}.card{max-width:520px;margin:80px auto;background:#fff;border:1px solid #d8dde5;border-radius:10px;padding:28px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.06)}h2{color:#c0392b;margin:0 0 12px}p{color:#444;line-height:1.5}</style>
+<style>body{margin:0;background:#f3f1ea;color:#24211c;font-family:ui-monospace,"Cascadia Mono",Consolas,"DejaVu Sans Mono",monospace;font-size:13px;line-height:1.5}.card{max-width:560px;margin:80px auto;background:#fffdf8;border:1px solid #ded8ca;border-left:3px solid #a8362a;padding:20px}.card h2{margin:0 0 10px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#a8362a}.card p{margin:0;color:#5b5449}@media (prefers-color-scheme:dark){body{background:#14161a;color:#e8e6e1}.card{background:#1b1e23;border-color:#2e333b;border-left-color:#e2725b}.card h2{color:#e2725b}.card p{color:#a49e94}}</style>
 </head><body>
 <div class="card">
   <h2>Доступ запрещён</h2>
@@ -497,49 +497,54 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
 })();
 </script>
 <style>
-  /* ---------- Палитра: светлая тема (по умолчанию) ---------- */
+  /* ==================================================================
+     Poznote — «приборная панель», а не набор карточек: моноширинный
+     шрифт, прямые углы, линейки вместо теней, тёплая палитра.
+     Светлая тема — «бумажный журнал», тёмная — графит.
+     ================================================================== */
   :root {
     color-scheme: light;
-    --radius:12px;
-    --accent:#2f6fed; --accent2:#5b93ff;
-    --bg:#eef1f5; --card:#ffffff; --card2:#f7f9fc; --line:#dbe1ea;
-    --text:#1f2733; --head:#414b5a; --muted:#6b7480;
-    --btn-bg:#ffffff; --btn-bg-hover:#f2f6fd; --btn-line:#dbe1ea;
-    --ok-bg:#e7f6ec; --ok-bg-h:#dcf2e5; --ok-line:#b6e3c6; --ok-text:#166b3d;
-    --err-bg:#fdecea; --err-bg-h:#fbdfdb; --err-line:#f0c3bc; --err-text:#9b2c20;
-    --warn-bg:#fff6e8; --warn-bg-h:#fdefdb; --warn-line:#f0c48a; --warn-text:#8a5a10;
-    --shadow:0 1px 3px rgba(16,24,40,.06);
-    --console-bg:#0f1620; --console-text:#d7e3f2; --console-line:#22303f;
+    --mono: ui-monospace, "Cascadia Mono", Consolas, "DejaVu Sans Mono", "Liberation Mono", monospace;
+    --accent:#b3550f; --accent-text:#fff8f1;
+    --bg:#f3f1ea; --card:#fffdf8; --card2:#f7f4ec;
+    --line:#ded8ca; --line-strong:#c4bca7;
+    --text:#24211c; --head:#6a6255; --muted:#7d766a;
+    --btn-bg:transparent; --btn-bg-hover:#24211c; --btn-text-hover:#f7f4ec; --btn-line:#c4bca7;
+    --ok:#2f7d4f; --ok-bg:#edf5ef; --ok-line:#b9d6c3;
+    --err:#a8362a; --err-bg:#fbeeec; --err-line:#e3c0b9;
+    --warn:#8a6412; --warn-bg:#faf3e1; --warn-line:#ddcb9c;
+    --console-bg:#fffdf8; --console-text:#2b2822; --console-line:#ded8ca;
+    --focus:rgba(179,85,15,.25);
   }
-  /* ---------- Палитра: тёмная тема ---------- */
   [data-theme="dark"] {
     color-scheme: dark;
-    --accent:#4d8dff; --accent2:#7aa8ff;
-    --bg:#11151c; --card:#1a2029; --card2:#212936; --line:#2c3542;
-    --text:#e6ebf2; --head:#aab6c6; --muted:#98a3b3;
-    --btn-bg:#222b36; --btn-bg-hover:#2b3542; --btn-line:#37424f;
-    --ok-bg:#16301f; --ok-bg-h:#1c3d28; --ok-line:#2c5c3d; --ok-text:#7fd2a0;
-    --err-bg:#33191a; --err-bg-h:#3f2021; --err-line:#6d3230; --err-text:#f0a9a1;
-    --warn-bg:#332913; --warn-bg-h:#3f3218; --warn-line:#6b5527; --warn-text:#e8c07a;
-    --shadow:0 1px 3px rgba(0,0,0,.45);
-    --console-bg:#0b1119; --console-text:#cfe0f0; --console-line:#243040;
+    --accent:#e0873a; --accent-text:#17130d;
+    --bg:#14161a; --card:#1b1e23; --card2:#20242a;
+    --line:#2e333b; --line-strong:#3f4650;
+    --text:#e8e6e1; --head:#a49e94; --muted:#8b867e;
+    --btn-bg:transparent; --btn-bg-hover:#e8e6e1; --btn-text-hover:#14161a; --btn-line:#3f4650;
+    --ok:#57b98a; --ok-bg:#17251e; --ok-line:#2f5442;
+    --err:#e2725b; --err-bg:#2a1a17; --err-line:#5c342c;
+    --warn:#d9a24a; --warn-bg:#2a2314; --warn-line:#5c4a25;
+    --console-bg:#101216; --console-text:#d7d3cc; --console-line:#2b3038;
+    --focus:rgba(224,135,58,.3);
   }
 
   * { box-sizing:border-box; }
   [hidden] { display:none !important; }
-  body { margin:0; background:var(--bg); color:var(--text); font-family:Verdana,Arial,Helvetica,sans-serif; font-size:13px; }
-  .wrap { max-width:1440px; margin:0 auto; padding:12px 14px 14px; }
+  body { margin:0; background:var(--bg); color:var(--text);
+         font-family:var(--mono); font-size:13px; line-height:1.5; }
+  .wrap { max-width:1600px; margin:0 auto; padding:12px 14px 16px; counter-reset:sec; }
 
   /* ---------- Сетка: широкое окно — две колонки ---------- */
-  .grid { display:grid; gap:12px; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); }
+  .grid { display:grid; gap:10px; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); }
   .grid > .card { margin-bottom:0; }
   .grid .g-ctrl   { grid-column:1; grid-row:1; }
   .grid .g-ports  { grid-column:2; grid-row:1; }
   .grid .g-status { grid-column:1; grid-row:2; }
   .grid .g-log    { grid-column:2; grid-row:2; }
-  /* Консольные блоки занимают свободную высоту своей карточки. */
   .grid .g-status, .grid .g-log { display:flex; flex-direction:column; }
-  .grid .g-status pre.status, .grid .g-log textarea { flex:1 1 auto; min-height:132px; max-height:none; height:auto; }
+  .grid .g-status pre.status, .grid .g-log textarea { flex:1 1 auto; min-height:130px; max-height:none; height:auto; }
   @media (max-width:900px) {
     .grid { grid-template-columns:1fr; }
     .grid .g-ctrl, .grid .g-ports, .grid .g-status, .grid .g-log { grid-column:1; grid-row:auto; }
@@ -547,98 +552,110 @@ $logTail = poz_log_tail($LOG_FILE, $LOG_LINES);
 
   /* ---------- Верхняя панель ---------- */
   .topbar { position:sticky; top:0; z-index:20; display:flex; align-items:center; justify-content:space-between;
-            gap:14px; flex-wrap:wrap; padding:10px 14px; margin-bottom:12px; border:1px solid var(--line);
-            border-radius:var(--radius); background:var(--card); box-shadow:var(--shadow); }
-  .brand { display:flex; align-items:center; gap:11px; }
-  .logo { width:38px; height:38px; flex:0 0 38px; border-radius:10px; color:#fff; font-size:19px; font-weight:bold;
-          display:flex; align-items:center; justify-content:center;
-          background:linear-gradient(135deg,var(--accent),#7aa8ff); box-shadow:0 4px 10px rgba(47,111,237,.28); }
-  .brand h1 { font-size:18px; margin:0; letter-spacing:.2px; }
-  .brand small { display:block; margin-top:2px; color:var(--muted); font-size:11.5px; }
-  .topright { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+            gap:12px; flex-wrap:wrap; padding:8px 12px; margin-bottom:10px;
+            border:1px solid var(--line); border-bottom:2px solid var(--accent); background:var(--card); }
+  .brand { display:flex; align-items:center; gap:10px; }
+  .logo { width:34px; height:34px; flex:0 0 34px; display:flex; align-items:center; justify-content:center;
+          background:var(--accent); color:var(--accent-text); font-size:16px; font-weight:bold; }
+  .brand h1 { font-size:15px; margin:0; font-weight:bold; letter-spacing:.14em; text-transform:uppercase; }
+  .brand small { display:block; margin-top:1px; color:var(--muted); font-size:11px; }
+  .topright { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 
-  .pill { display:inline-flex; align-items:center; gap:8px; padding:6px 13px; border-radius:999px;
-          color:#fff; font-size:12px; font-weight:bold; white-space:nowrap; }
-  .pill::before { content:""; width:7px; height:7px; border-radius:50%; background:#fff; box-shadow:0 0 0 3px rgba(255,255,255,.3); }
-  .pill.on { background:linear-gradient(135deg,#1e9e57,#3ab877); }
-  .pill.off { background:#8a939e; }
+  .pill { display:inline-flex; align-items:center; gap:7px; padding:5px 9px; white-space:nowrap;
+          border:1px solid var(--line-strong); background:var(--card2); color:var(--text);
+          font-size:11px; font-weight:bold; letter-spacing:.1em; text-transform:uppercase; }
+  .pill::before { content:""; width:8px; height:8px; background:currentColor; }
+  .pill.on  { color:var(--ok);  background:var(--ok-bg);  border-color:var(--ok-line); }
+  .pill.off { color:var(--muted); }
 
-  /* ---------- Карточки ---------- */
-  .card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:14px;
-          margin-bottom:12px; box-shadow:var(--shadow); }
-  .cardhead { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 10px; }
-  .cardhead h2 { font-size:12px; margin:0; color:var(--head); text-transform:uppercase; letter-spacing:.6px; }
-  .cardhead .hint { margin-left:auto; color:var(--muted); font-size:11.5px; text-align:right; }
+  /* ---------- Панели (карточки) с шапкой-линейкой ---------- */
+  .card { background:var(--card); border:1px solid var(--line); padding:12px; margin-bottom:10px; overflow:hidden; }
+  .cardhead { display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+              margin:-12px -12px 10px; padding:7px 12px; border-bottom:1px solid var(--line); background:var(--card2); }
+  .cardhead h2 { font-size:11px; margin:0; color:var(--head); font-weight:bold;
+                 letter-spacing:.12em; text-transform:uppercase; }
+  .cardhead h2::before { counter-increment:sec; content:counter(sec, decimal-leading-zero) "/";
+                         margin-right:7px; color:var(--accent); }
+  .cardhead .hint { margin-left:auto; color:var(--muted); font-size:11px; text-align:right; }
   .cardhead .right { margin-left:auto; }
-  .cardnote { margin:12px 0 0; color:var(--muted); font-size:11.5px; line-height:1.55; }
+  .cardnote { margin:10px 0 0; padding-left:9px; border-left:2px solid var(--line-strong);
+              color:var(--muted); font-size:11px; line-height:1.55; }
+  .cardnote::before { content:"// "; color:var(--line-strong); }
+  a { color:var(--accent); }
+  .cardnote a { text-decoration:none; border-bottom:1px dotted var(--accent); }
+  .cardnote a:hover { border-bottom-style:solid; }
 
-  /* ---------- Кнопки ---------- */
-  .btnrow { display:flex; flex-wrap:wrap; gap:8px; }
+  /* ---------- Кнопки: блоки с инверсией при наведении ---------- */
+  .btnrow { display:flex; flex-wrap:wrap; gap:6px; }
   form { display:inline; margin:0; }
-  button, .btn { display:inline-flex; align-items:center; gap:7px; font-family:inherit; font-size:12.5px;
-                 font-weight:bold; line-height:1; padding:9px 15px; border-radius:9px;
-                 border:1px solid var(--btn-line); background:var(--btn-bg); color:var(--text); cursor:pointer;
-                 text-decoration:none; transition:background .15s, border-color .15s, box-shadow .15s; }
-  button:hover, .btn:hover { background:var(--btn-bg-hover); }
+  button, .btn { display:inline-flex; align-items:center; gap:7px; font-family:var(--mono); font-size:11px;
+                 font-weight:bold; letter-spacing:.09em; text-transform:uppercase; line-height:1;
+                 padding:8px 11px; border:1px solid var(--btn-line); background:var(--btn-bg); color:var(--text);
+                 cursor:pointer; text-decoration:none; transition:background .12s, color .12s, border-color .12s; }
+  button:hover, .btn:hover { background:var(--btn-bg-hover); border-color:var(--btn-bg-hover); color:var(--btn-text-hover); }
   button:active, .btn:active { transform:translateY(1px); }
-  button:disabled { opacity:.55; cursor:progress; }
-  .btn.primary { background:linear-gradient(135deg,var(--accent),var(--accent2)); border-color:var(--accent);
-                 color:#fff; box-shadow:0 2px 8px rgba(47,111,237,.28); }
-  .btn.primary:hover { filter:brightness(1.06); }
-  .btn.go { background:var(--ok-bg); border-color:var(--ok-line); color:var(--ok-text); }
-  .btn.go:hover { background:var(--ok-bg-h); }
-  .btn.warn { background:var(--warn-bg); border-color:var(--warn-line); color:var(--warn-text); }
-  .btn.warn:hover { background:var(--warn-bg-h); }
-  .btn.danger { background:var(--err-bg); border-color:var(--err-line); color:var(--err-text); }
-  .btn.danger:hover { background:var(--err-bg-h); }
-  .btn.sm { padding:7px 11px; font-size:11.5px; font-weight:normal; }
-  .btn.ghost { background:transparent; border-color:transparent; color:var(--muted); }
-  .btn.ghost:hover { background:var(--btn-bg-hover); border-color:transparent; color:var(--text); }
-  .btn.icon { padding:9px 11px; }
-  svg.i { width:14px; height:14px; flex:0 0 14px; fill:none; stroke:currentColor; stroke-width:1.8;
-          stroke-linecap:round; stroke-linejoin:round; }
+  button:disabled { opacity:.45; cursor:progress; }
+  .btn.primary { background:var(--accent); border-color:var(--accent); color:var(--accent-text); }
+  .btn.primary:hover { background:var(--btn-bg-hover); border-color:var(--btn-bg-hover); color:var(--btn-text-hover); }
+  .btn.go { color:var(--ok); border-color:var(--ok-line); }
+  .btn.go:hover { background:var(--ok); border-color:var(--ok); color:var(--card); }
+  .btn.warn { color:var(--warn); border-color:var(--warn-line); }
+  .btn.warn:hover { background:var(--warn); border-color:var(--warn); color:var(--card); }
+  .btn.danger { color:var(--err); border-color:var(--err-line); }
+  .btn.danger:hover { background:var(--err); border-color:var(--err); color:var(--card); }
+  .btn.sm { padding:5px 8px; font-size:10.5px; letter-spacing:.06em; }
+  .btn.ghost { border-color:transparent; color:var(--muted); }
+  .btn.ghost:hover { background:transparent; border-color:var(--btn-line); color:var(--text); }
+  .btn.icon { padding:7px 8px; }
+  svg.i { width:13px; height:13px; flex:0 0 13px; fill:none; stroke:currentColor; stroke-width:1.6;
+          stroke-linecap:square; stroke-linejoin:miter; }
   svg.i.solid { fill:currentColor; stroke:none; }
   /* Иконка темы: в светлой теме показываем «луну» (переключение в тёмную) и наоборот. */
   svg.i-sun { display:none; }
   [data-theme="dark"] svg.i-sun { display:inline-block; }
   [data-theme="dark"] svg.i-moon { display:none; }
 
-  /* ---------- Группы кнопок в «Управлении» ---------- */
-  .group + .group { margin-top:14px; padding-top:14px; border-top:1px dashed var(--line); }
-  .grouplabel { display:block; margin-bottom:8px; color:var(--muted); font-size:11px; font-weight:bold;
-                text-transform:uppercase; letter-spacing:.5px; }
+  /* ---------- Группы кнопок ---------- */
+  .group + .group { margin-top:10px; padding-top:10px; border-top:1px dashed var(--line-strong); }
+  .grouplabel { display:block; margin-bottom:7px; color:var(--head); font-size:10.5px; font-weight:bold;
+                letter-spacing:.16em; text-transform:uppercase; }
+  .grouplabel::before { content:"— "; color:var(--line-strong); }
 
   /* ---------- Порты ---------- */
   #portsForm { display:block; }
-  .fields { display:flex; flex-wrap:wrap; align-items:flex-end; gap:14px 18px; margin-bottom:12px; }
-  .field { display:flex; flex-direction:column; gap:6px; }
-  .field label { color:var(--muted); font-size:11px; font-weight:bold; text-transform:uppercase; letter-spacing:.4px; }
-  .field input[type=text] { font-family:inherit; font-size:13px; width:92px; padding:8px 10px; text-align:center;
-                            border:1px solid var(--btn-line); border-radius:9px; background:var(--card2); color:var(--text); }
-  .field input[type=text]:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(47,111,237,.18); }
+  .fields { display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px 16px; margin-bottom:10px; }
+  .field { display:flex; flex-direction:column; gap:5px; }
+  .field label { color:var(--head); font-size:10.5px; font-weight:bold; letter-spacing:.12em; text-transform:uppercase; }
+  .field input[type=text] { font-family:var(--mono); font-size:14px; letter-spacing:.08em; width:86px; padding:6px 8px;
+                            text-align:center; border:1px solid var(--line-strong); background:var(--card2); color:var(--text); }
+  .field input[type=text]:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 2px var(--focus); }
   .ports { display:flex; flex-wrap:wrap; gap:6px; }
-  .ptag { display:inline-flex; align-items:center; gap:7px; padding:5px 11px; border-radius:999px; font-size:11.5px; }
-  .ptag::before { content:""; width:7px; height:7px; border-radius:50%; background:currentColor; opacity:.75; }
-  .ptag.ok { background:var(--ok-bg); border:1px solid var(--ok-line); color:var(--ok-text); }
-  .ptag.bad { background:var(--err-bg); border:1px solid var(--err-line); color:var(--err-text); }
+  .ptag { display:inline-flex; align-items:center; gap:7px; padding:4px 8px; font-size:10.5px;
+          letter-spacing:.05em; text-transform:uppercase; border:1px solid var(--line-strong);
+          background:var(--card2); color:var(--text); }
+  .ptag::before { content:""; width:7px; height:7px; background:currentColor; }
+  .ptag.ok  { color:var(--ok);  background:var(--ok-bg);  border-color:var(--ok-line); }
+  .ptag.bad { color:var(--err); background:var(--err-bg); border-color:var(--err-line); }
 
-  /* ---------- Статус, журнал, сообщения ---------- */
-  pre, textarea { width:100%; font-family:'Courier New',Courier,monospace; font-size:12px; background:var(--console-bg);
-                  color:var(--console-text); border:1px solid var(--console-line); border-radius:9px; padding:10px;
-                  margin:0; white-space:pre-wrap; word-break:break-word; }
-  pre.status { max-height:180px; overflow:auto; }
-  textarea { height:220px; min-height:120px; resize:vertical; }
-  .notice { padding:10px 12px; border-radius:9px; margin-bottom:14px; font-weight:bold; }
-  .notice.ok { background:var(--ok-bg); border:1px solid var(--ok-line); color:var(--ok-text); }
-  .notice.err { background:var(--err-bg); border:1px solid var(--err-line); color:var(--err-text); }
+  /* ---------- Консоль, сообщения, прогресс ---------- */
+  pre, textarea { width:100%; font-family:var(--mono); font-size:11.5px; line-height:1.45; margin:0; padding:9px;
+                  background:var(--console-bg); color:var(--console-text); border:1px solid var(--console-line);
+                  white-space:pre-wrap; word-break:break-word; }
+  pre.status { max-height:170px; overflow:auto; }
+  textarea { height:200px; min-height:110px; resize:vertical; }
+  .notice { padding:8px 10px; margin-bottom:10px; border:1px solid var(--line-strong); border-left-width:3px; font-size:11.5px; }
+  .notice.ok  { background:var(--ok-bg);  border-color:var(--ok-line);  border-left-color:var(--ok);  color:var(--ok); }
+  .notice.err { background:var(--err-bg); border-color:var(--err-line); border-left-color:var(--err); color:var(--err); }
   .muted { color:var(--muted); }
-  .progress { display:flex; align-items:center; gap:14px; }
-  .spinner { width:26px; height:26px; flex:0 0 26px; border:3px solid var(--btn-line); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; }
+  .progress { display:flex; align-items:center; gap:12px; }
+  .spinner { width:18px; height:18px; flex:0 0 18px; border:2px solid var(--line-strong); border-top-color:var(--accent);
+             animation:spin 1s linear infinite; }
   @keyframes spin { to { transform:rotate(360deg); } }
-  .progress .ptxt { font-weight:bold; }
-  .progress .ptime { margin-left:auto; font-family:'Courier New',Courier,monospace; color:var(--muted); }
-  .progress .phint { color:var(--muted); margin-top:3px; font-weight:normal; }
-  .progress .pstep { margin-top:5px; color:var(--muted); font-family:'Courier New',Courier,monospace; font-size:11px; max-width:640px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .progress .ptxt { font-weight:bold; font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; }
+  .progress .ptime { margin-left:auto; font-size:11.5px; color:var(--muted); }
+  .progress .phint { color:var(--muted); margin-top:2px; font-size:11px; font-weight:normal; }
+  .progress .pstep { margin-top:3px; color:var(--muted); font-size:10.5px; max-width:760px;
+                     white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   @media (max-width:560px) {
     .topbar { position:static; }
     .cardhead .hint { margin-left:0; width:100%; text-align:left; }
