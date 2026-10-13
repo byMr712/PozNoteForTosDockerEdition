@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Poznote — панель управления</title>
+<style>
+  :root{
+    --bg:#0f1116; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
+    --text:#e6e9ef; --muted:#98a0b0; --accent:#3b82f6; --ok:#22c55e;
+    --warn:#f59e0b; --err:#ef4444;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.45 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--text)}
+  header{display:flex;align-items:center;gap:12px;padding:16px 20px;
+         background:linear-gradient(180deg,#1b1f27,#14171d);border-bottom:1px solid var(--line)}
+  header h1{font-size:18px;margin:0;font-weight:600}
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--muted);display:inline-block}
+  .dot.on{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+  .dot.off{background:var(--err)}
+  .spacer{flex:1}
+  .sub{color:var(--muted);font-size:12px}
+  main{padding:18px 20px;display:grid;gap:16px;max-width:1100px;margin:0 auto}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+  .card h2{font-size:15px;margin:0 0 12px;font-weight:600;color:var(--text)}
+  .actions{display:flex;flex-wrap:wrap;gap:10px}
+  button,a.btn{cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--text);
+       padding:9px 14px;border-radius:8px;font-size:13px;text-decoration:none;transition:.15s}
+  button:hover,a.btn:hover{border-color:var(--accent);background:#232936}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  button.primary:hover{filter:brightness(1.08)}
+  button.danger:hover{border-color:var(--err);color:#ffd7d7}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:500}
+  code{background:#0b0d12;border:1px solid var(--line);border-radius:6px;padding:1px 6px;font-size:12px}
+  pre{background:#0b0d12;border:1px solid var(--line);border-radius:8px;padding:12px;max-height:340px;
+      overflow:auto;font-size:12px;white-space:pre-wrap;margin:0}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:760px){.grid{grid-template-columns:1fr}}
+  .toast{position:fixed;right:18px;bottom:18px;background:var(--panel2);border:1px solid var(--line);
+      border-radius:8px;padding:10px 14px;font-size:13px;opacity:0;transform:translateY(8px);
+      transition:.2s;pointer-events:none;max-width:420px}
+  .toast.show{opacity:1;transform:none}
+  .toast.err{border-color:var(--err)}
+  .toast.ok{border-color:var(--ok)}
+  .kv{color:var(--muted);font-size:12px;margin-top:8px}
+</style>
+</head>
+<body>
+<header>
+  <span class="dot" id="stateDot"></span>
+  <h1>Poznote</h1>
+  <span class="sub" id="stateText">загрузка…</span>
+  <span class="spacer"></span>
+  <a class="btn" id="openApp" href="#" target="_blank" rel="noopener">Открыть Poznote ↗</a>
+</header>
+
+<main>
+  <div class="card">
+    <h2>Управление контейнерами</h2>
+    <div class="actions">
+      <button class="primary" id="btnUpdate">Обновить образ</button>
+      <button id="btnRestart">Перезапустить</button>
+      <button id="btnStart">Запустить</button>
+      <button id="btnStop" class="danger">Остановить</button>
+      <button id="btnRefresh">Обновить статус</button>
+    </div>
+    <div class="kv" id="meta"></div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Контейнеры</h2>
+      <table>
+        <thead><tr><th>Имя</th><th>Образ</th><th>Статус</th></tr></thead>
+        <tbody id="containers"><tr><td colspan="3" class="sub">…</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Журнал <span class="sub">(последние 200 строк)</span></h2>
+      <div class="actions" style="margin-bottom:10px">
+        <button id="btnLogs">Показать журнал</button>
+      </div>
+      <pre id="logs">—</pre>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const qs = new URLSearchParams(location.search);
+  const token = qs.get("token") || "";
+  const withToken = (u) => token ? (u + (u.includes("?") ? "&" : "?") + "token=" + encodeURIComponent(token)) : u;
+  const headers = token ? { "X-Auth-Token": token } : {};
+
+  const $ = (id) => document.getElementById(id);
+  const dot = $("stateDot"), stateText = $("stateText");
+
+  function toast(msg, kind){
+    const t = $("toast");
+    t.textContent = msg;
+    t.className = "toast show " + (kind || "");
+    clearTimeout(t._t);
+    t._t = setTimeout(() => t.className = "toast", 4000);
+  }
+
+  async function jget(u){
+    const r = await fetch(withToken(u), { headers });
+    return r.json();
+  }
+  async function jpost(u){
+    const r = await fetch(withToken(u), { method: "POST", headers });
+    return r.json();
+  }
+
+  async function refresh(){
+    try{
+      const s = await jget("/api/status");
+      const list = s.containers || [];
+      const running = list.filter(c => /up|running/i.test(c.status)).length;
+      dot.className = "dot " + (running > 0 ? "on" : (s.error ? "off" : ""));
+      stateText.textContent = s.error
+        ? "Docker недоступен"
+        : (list.length ? (running + " из " + list.length + " запущено") : "контейнеры не найдены");
+      $("meta").innerHTML =
+        "Данные: <code>" + (s.data_dir || "?") + "</code> · " +
+        "Compose: <code>" + (s.compose_file || "?") + "</code> · " +
+        "Режим: <code>" + (s.compose_mode || "?") + "</code> · " +
+        "Панель: " + (s.uptime || "?");
+      const port = s.app_port || "8040";
+      $("openApp").href = location.protocol + "//" + location.hostname + ":" + port + "/";
+
+      const tb = $("containers");
+      if(!list.length){ tb.innerHTML = '<tr><td colspan="3" class="sub">нет контейнеров</td></tr>'; }
+      else {
+        tb.innerHTML = list.map(c =>
+          "<tr><td>" + c.name + "</td><td><code>" + c.image + "</code></td><td>" + c.status + "</td></tr>"
+        ).join("");
+      }
+    }catch(e){
+      dot.className = "dot off"; stateText.textContent = "ошибка связи с панелью";
+      toast("Ошибка статуса: " + e.message, "err");
+    }
+  }
+
+  async function action(do_, label, confirmText){
+    if(confirmText && !confirm(confirmText)) return;
+    const btns = document.querySelectorAll("button");
+    btns.forEach(b => b.disabled = true);
+    toast(label + "…", "");
+    try{
+      const r = await jpost("/api/action?do=" + do_);
+      if(r.ok) toast(label + ": готово", "ok");
+      else toast(label + ": ошибка", "err");
+      if(r.output){ $("logs").textContent = r.output; }
+    }catch(e){
+      toast(label + ": " + e.message, "err");
+    }finally{
+      btns.forEach(b => b.disabled = false);
+      refresh();
+    }
+  }
+
+  $("btnUpdate").onclick = () => action("update", "Обновление образа",
+      "Скачать свежий образ Poznote и пересоздать контейнеры? Данные сохранятся.");
+  $("btnRestart").onclick = () => action("restart", "Перезапуск");
+  $("btnStart").onclick   = () => action("start", "Запуск");
+  $("btnStop").onclick    = () => action("stop", "Остановка",
+      "Остановить контейнеры Poznote?");
+  $("btnRefresh").onclick = refresh;
+  $("btnLogs").onclick = async () => {
+    try{
+      const r = await jget("/api/logs?tail=200");
+      $("logs").textContent = r.logs || (r.error || "—");
+    }catch(e){ toast("Журнал: " + e.message, "err"); }
+  };
+
+  refresh();
+  setInterval(refresh, 15000);
+})();
+</script>
+</body>
+</html>
