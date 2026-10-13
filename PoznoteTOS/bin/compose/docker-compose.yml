@@ -1,0 +1,39 @@
+# Poznote container definition used by the TOS service.
+# Variable substitution is provided by init.d/service:
+#   POZNOTE_DATA       host path for the persistent data volume
+#   POZNOTE_PORT       host port for the Poznote web UI (default 8040)
+#   POZNOTE_MCP_PORT   host port for the MCP server, bound to localhost (default 8045)
+#   POZNOTE_IMAGE_TAG  image tag, "6" = stable channel (default 6)
+#   POZNOTE_IMAGE      full web image reference (override to use a registry mirror)
+#   POZNOTE_MCP_IMAGE  full MCP image reference (override to use a registry mirror)
+
+services:
+  webserver:
+    image: ${POZNOTE_IMAGE:-ghcr.io/timothepoznanski/poznote}:${POZNOTE_IMAGE_TAG:-6}
+    container_name: poznote
+    restart: unless-stopped
+    environment:
+      SQLITE_DATABASE: /var/www/html/data/database/poznote.db
+    ports:
+      - "${POZNOTE_PORT:-8040}:80"
+    volumes:
+      - "${POZNOTE_DATA}:/var/www/html/data"
+    healthcheck:
+      test: ["CMD-SHELL", "port=$$(grep -o 'listen [0-9][0-9]*;' /etc/nginx/http.d/default.conf | head -n 1 | tr -dc 0-9); wget --quiet --tries=1 --timeout=5 -O /dev/null http://127.0.0.1:$${port:-80}/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  mcp-server:
+    image: ${POZNOTE_MCP_IMAGE:-ghcr.io/timothepoznanski/poznote-mcp}:${POZNOTE_IMAGE_TAG:-6}
+    container_name: poznote-mcp
+    restart: unless-stopped
+    environment:
+      POZNOTE_API_URL: http://webserver:80/api/v1
+    ports:
+      - "127.0.0.1:${POZNOTE_MCP_PORT:-8045}:8045"
+    volumes:
+      - "${POZNOTE_DATA}:/var/www/html/data:ro"
+    depends_on:
+      - webserver

@@ -1,0 +1,664 @@
+#!/bin/bash
+# Poznote TOS service (Docker wrapper + control panel)
+# start|stop|reload|update|status|reset|inst_version|dep_check
+
+VERSION="6.117.0.0"
+MOD_NAME=Poznote
+
+ROOTUSER=$(id -un)
+LOGFILE="/usr/local/${MOD_NAME}/${MOD_NAME}_start.log"
+
+export depend=(
+  ""
+)
+. /usr/local/${MOD_NAME}/functions/dependapps.sh
+
+APP_ROOT=$(dirname $(dirname $(readlink -f $0)))
+BINDIR="$APP_ROOT/bin/program"
+COMPOSEDIR="$APP_ROOT/bin/compose"
+PANEL_BIN="$BINDIR/poznote-panel"
+RUNDIR="/usr/local/${MOD_NAME}/bin"
+PIDFILE="$RUNDIR/${MOD_NAME}_panel.pid"
+COMPOSE_FILE="$COMPOSEDIR/docker-compose.yml"
+PROJECT="poznote"
+
+# ---- Defaults (override in $MODCONFIGPATH/poznote.env) --------------------
+POZNOTE_PORT=8040
+POZNOTE_MCP_PORT=8045
+POZNOTE_PANEL_PORT=8042
+POZNOTE_IMAGE_TAG=6
+POZNOTE_DATA_DIR=""
+# Full image references. Keep the defaults for ghcr.io; point them at a registry
+# mirror if the NAS cannot reach GitHub Container Registry.
+POZNOTE_IMAGE="ghcr.io/timothepoznanski/poznote"
+POZNOTE_MCP_IMAGE="ghcr.io/timothepoznanski/poznote-mcp"
+
+# Docker Compose command (plugin "docker compose" preferred, legacy fallback)
+COMPOSE_CMD=""
+
+# POZNOTE_QUIET=1 silences routine lines. The control panel polls `status`
+# frequently; without this every poll would append "Found docker…", the volume
+# line and "Data dir…" to the log and flood it.
+log(){ [ "${POZNOTE_QUIET:-0}" = "1" ] && return 0; echo "$(date +"%d/%m/%y %T") $*" >> "$LOGFILE" 2>&1; }
+
+err(){ echo "$*" >&2; log "ERROR: $*"; }
+
+load_env(){
+    local f="$MODCONFIGPATH/poznote.env"
+    if [ -f "$f" ]; then
+        # shellcheck disable=SC1090
+        . "$f"
+        log "Loaded settings from $f"
+    fi
+}
+
+# TerraMaster installs Docker Engine as an app (DockerEngine) under @apps; its
+# bin directory is NOT in the PATH of init scripts, so `command -v docker`
+# fails there even though Docker works fine in an interactive shell. Locate it
+# explicitly and prepend its directory to PATH.
+ensure_docker_path(){
+    if command -v docker >/dev/null 2>&1; then
+        return 0
+    fi
+    if [ -n "$DOCKER_BIN" ] && [ -x "$DOCKER_BIN/docker" ]; then
+        PATH="$DOCKER_BIN:$PATH"; export PATH
+        [ -z "$DOCKER_BIN" ] || log "Using docker from DOCKER_BIN=$DOCKER_BIN"
+        return 0
+    fi
+    local d
+    for d in \
+        /usr/local/DockerEngine/dockerd/bin \
+        /Volume1/@apps/DockerEngine/dockerd/bin \
+        /Volume2/@apps/DockerEngine/dockerd/bin \
+        /Volume3/@apps/DockerEngine/dockerd/bin \
+        /usr/local/@apps/DockerEngine/dockerd/bin \
+        /usr/local/bin /usr/bin /bin
+    do
+        if [ -x "$d/docker" ]; then
+            PATH="$d:$PATH"; export PATH
+            log "Found docker in $d"
+            return 0
+        fi
+    done
+    return 1
+}
+
+detect_compose(){
+    if docker compose version >/dev/null 2>&1; then
+        COMPOSE_CMD="docker compose"
+    elif command -v docker-compose >/dev/null 2>&1; then
+        COMPOSE_CMD="docker-compose"
+    else
+        COMPOSE_CMD=""
+    fi
+}
+
+compose(){ $COMPOSE_CMD -f "$COMPOSE_FILE" --project-name "$PROJECT" "$@"; }
+
+check_docker(){
+    ensure_docker_path
+    if ! command -v docker >/dev/null 2>&1; then
+        err "docker not found. Install and start Docker (DockerEngine) via TerraMaster App Center first."
+        return 1
+    fi
+    detect_compose
+    if [ -z "$COMPOSE_CMD" ]; then
+        err "neither 'docker compose' nor 'docker-compose' is available."
+        return 1
+    fi
+    return 0
+}
+
+# --- Ports -----------------------------------------------------------------
+# The control panel polls `status` often, so everything here is cheap and
+# side-effect free.
+
+port_num(){
+    case "$1" in
+        ''|*[!0-9]*) return 1 ;;
+    esac
+    [ "$1" -ge 1 ] 2>/dev/null && [ "$1" -le 65535 ] 2>/dev/null
+}
+
+# 0 when a TCP socket is listening on port $1. Parses /proc/net/tcp so it works
+# even without ss/netstat (init scripts run with a very small PATH).
+port_in_use(){
+    local hex
+    hex=$(printf '%04X' "$1" 2>/dev/null) || return 1
+    if cat /proc/net/tcp /proc/net/tcp6 2>/dev/null \
+        | awk -v h=":$hex" '$2 ~ h"$" && $4 == "0A" { found = 1 } END { exit found ? 0 : 1 }'; then
+        return 0
+    fi
+    if command -v ss >/dev/null 2>&1; then
+        ss -ltn 2>/dev/null | grep -qE "[:.]$1[[:space:]]" && return 0
+    elif command -v netstat >/dev/null 2>&1; then
+        netstat -ltn 2>/dev/null | grep -qE "[:.]$1[[:space:]]" && return 0
+    fi
+    return 1
+}
+
+# Best-effort "who holds this port", used only for operator-facing messages.
+port_owner(){
+    local line name
+    if command -v ss >/dev/null 2>&1; then
+        line=$(ss -ltnp 2>/dev/null | grep -E "[:.]$1[[:space:]]" | head -n 1)
+    fi
+    if [ -z "$line" ] && command -v netstat >/dev/null 2>&1; then
+        line=$(netstat -ltnp 2>/dev/null | grep -E "[:.]$1[[:space:]]" | head -n 1)
+    fi
+    [ -z "$line" ] && return 0
+    name=$(printf '%s' "$line" | sed -n 's/.*users:((\"\([^\"]*\)\",pid=\([0-9]*\).*/\1 (pid \2)/p')
+    if [ -n "$name" ]; then echo "$name"; else echo "$line"; fi
+}
+
+# True when one of our own containers already publishes the port (restart case).
+port_published_by_us(){
+    command -v docker >/dev/null 2>&1 || return 1
+    docker ps --format '{{.Names}} {{.Ports}}' 2>/dev/null \
+        | grep -E '(^|[[:space:]])poznote' | grep -q ":$1->"
+}
+
+# Non-zero (plus an actionable message) when a configured port is taken by a
+# foreign process. Never kills anything: the operator decides.
+check_ports(){
+    local p bad=0 who
+    if ! port_num "$POZNOTE_PORT"; then
+        err "POZNOTE_PORT is not a valid TCP port ('$POZNOTE_PORT')."
+        bad=1
+    fi
+    if ! port_num "$POZNOTE_MCP_PORT"; then
+        err "POZNOTE_MCP_PORT is not a valid TCP port ('$POZNOTE_MCP_PORT')."
+        bad=1
+    fi
+    if [ "$POZNOTE_PORT" = "$POZNOTE_MCP_PORT" ]; then
+        err "POZNOTE_PORT and POZNOTE_MCP_PORT must differ (both are $POZNOTE_PORT)."
+        bad=1
+    fi
+    for p in "$POZNOTE_PORT" "$POZNOTE_MCP_PORT"; do
+        port_num "$p" || continue
+        if port_in_use "$p" && ! port_published_by_us "$p"; then
+            who=$(port_owner "$p")
+            err "Port $p is already in use by another application${who:+ — $who}. Set another value for POZNOTE_PORT/POZNOTE_MCP_PORT in $MODCONFIGPATH/poznote.env (or in the Poznote control panel) and restart."
+            bad=1
+        fi
+    done
+    if port_num "$POZNOTE_PANEL_PORT" && port_in_use "$POZNOTE_PANEL_PORT"; then
+        _findPID
+        if [ -z "$PID" ]; then
+            who=$(port_owner "$POZNOTE_PANEL_PORT")
+            err "Control panel port $POZNOTE_PANEL_PORT is already in use${who:+ — $who}. Set another value for POZNOTE_PANEL_PORT in $MODCONFIGPATH/poznote.env and restart."
+            bad=1
+        fi
+    fi
+    return $bad
+}
+
+# Machine-readable port state for the control panel (one line per port):
+#   web <port> free
+#   web <port> ours                       # held by our own containers — normal
+#   web <port> foreign <who holds it>     # a real conflict
+ports_state(){
+    ensure_docker_path >/dev/null 2>&1
+    local role p who
+    for role in web mcp; do
+        if [ "$role" = "web" ]; then p="$POZNOTE_PORT"; else p="$POZNOTE_MCP_PORT"; fi
+        if ! port_num "$p"; then
+            echo "$role $p invalid"
+        elif ! port_in_use "$p"; then
+            echo "$role $p free"
+        elif port_published_by_us "$p"; then
+            echo "$role $p ours"
+        else
+            who=$(port_owner "$p")
+            echo "$role $p foreign $who"
+        fi
+    done
+}
+
+# --- Registry reachability --------------------------------------------------
+
+registry_host(){
+    local h="${1%%/*}"
+    case "$h" in
+        *.*|*:*) echo "$h" ;;
+        *)       echo "" ;;
+    esac
+}
+
+image_present(){
+    command -v docker >/dev/null 2>&1 || return 1
+    docker image inspect "$1" >/dev/null 2>&1
+}
+
+# 0 when the registry (or a configured mirror) answers on 443.
+check_registry(){
+    local host="$1" c
+    [ -z "$host" ] && return 0
+    for c in curl ter_curl; do
+        command -v "$c" >/dev/null 2>&1 || continue
+        if command -v timeout >/dev/null 2>&1; then
+            timeout 10 "$c" -s -o /dev/null "https://$host/v2/" 2>/dev/null && return 0
+        else
+            "$c" -s -m 8 -o /dev/null "https://$host/v2/" 2>/dev/null && return 0
+        fi
+    done
+    if (exec 3<>"/dev/tcp/$host/443") 2>/dev/null; then
+        return 0
+    fi
+    return 1
+}
+
+registry_error(){
+    local host="$1"
+    err "Cannot reach $host (no internet / DNS / provider block?). Images are downloaded from there on the first start. Workarounds: set POZNOTE_IMAGE/POZNOTE_MCP_IMAGE to a registry mirror in $MODCONFIGPATH/poznote.env, or pre-load the images and restart."
+}
+
+# --- Config path ------------------------------------------------------------
+
+# TOS7 keeps per-app config in /usr/local/<id>/config, TOS6 in
+# /usr/local/@APP_CONFIG/<id>. `configdir` exposes the result to the panel.
+resolve_modconfigpath(){
+    [ -n "$MODCONFIGPATH" ] && return 0
+    GetTOSVersion
+    if [ "${TOSMVERS:-7}" -ge 7 ]; then
+        MODCONFIGPATH="/usr/local/${MOD_NAME}/config"
+    else
+        MODCONFIGPATH="/usr/local/@APP_CONFIG/${MOD_NAME}"
+    fi
+    export MODCONFIGPATH
+}
+
+setup_dirs(){
+    # Resolve the config path when this runs outside start/update (stop, status,
+    # reset) so docker compose can substitute ${POZNOTE_DATA} in every action.
+    resolve_modconfigpath
+    load_env
+    if [ "${POZNOTE_QUIET:-0}" = "1" ]; then
+        get_main_volume >/dev/null 2>&1
+    else
+        get_main_volume >> "$LOGFILE" 2>&1
+    fi
+    if [ -z "$POZNOTE_DATA_DIR" ]; then
+        POZNOTE_DATA_DIR="$MAIN_VOLUME/${MOD_NAME}/data"
+    fi
+    mkdir -p "$POZNOTE_DATA_DIR" 2>/dev/null
+    chmod 775 "$POZNOTE_DATA_DIR" 2>/dev/null
+    export POZNOTE_DATA="$POZNOTE_DATA_DIR"
+    export POZNOTE_PORT POZNOTE_MCP_PORT POZNOTE_PANEL_PORT POZNOTE_IMAGE_TAG
+    export POZNOTE_IMAGE POZNOTE_MCP_IMAGE
+    log "Data dir: $POZNOTE_DATA (web $POZNOTE_PORT, mcp $POZNOTE_MCP_PORT, panel $POZNOTE_PANEL_PORT)"
+}
+
+# --- TOS web-module registration (desktop icon -> /Poznote/) ---------------
+# TOS normally wires up /usr/www/<id> and the AppAccessControl nginx snippet by
+# itself, but on some builds only at boot. A freshly installed package would then
+# show a 404 until the next reboot. Register the module here instead, so the icon
+# works right after install/start. Every step below is idempotent.
+find_nginx(){
+    if command -v nginx >/dev/null 2>&1; then
+        command -v nginx
+        return 0
+    fi
+    local p
+    for p in /usr/sbin/nginx /usr/local/nginx/sbin/nginx /usr/local/sbin/nginx /usr/bin/nginx /sbin/nginx; do
+        if [ -x "$p" ]; then
+            echo "$p"
+            return 0
+        fi
+    done
+    return 1
+}
+
+register_web_module(){
+    local webui="$APP_ROOT/webui"
+    local link="/usr/www/${MOD_NAME}"
+    local nginx_dir="/etc/nginx/AppAccessControl"
+    local inc="/etc/nginx/conf.d/app-access-control.conf"
+    local conf_src="$APP_ROOT/bin/${MOD_NAME}.nginx.conf"
+    local conf_dst="$nginx_dir/AppAccessControl-${MOD_NAME}.conf"
+    local changed=0
+
+    if [ ! -d "$webui" ]; then
+        log "Web module dir not found ($webui); skipping nginx registration"
+        return 0
+    fi
+
+    # 1) /usr/www/<id> -> <app>/webui
+    if [ ! -L "$link" ] || [ "$(readlink -- "$link" 2>/dev/null)" != "$webui" ]; then
+        ln -sfn "$webui" "$link" && log "Linked $link -> $webui"
+    fi
+
+    # 2) make sure our AppAccessControl snippet is included by nginx
+    [ -d "$nginx_dir" ] || mkdir -p "$nginx_dir" 2>/dev/null
+    if [ -d /etc/nginx/conf.d ] && [ ! -f "$inc" ]; then
+        printf 'include AppAccessControl/*.conf;\n' > "$inc" && log "Created nginx include $inc"
+    fi
+
+    # 3) install / refresh the per-app snippet
+    if [ ! -f "$conf_src" ]; then
+        log "nginx snippet source missing ($conf_src); skipping"
+        return 0
+    fi
+    mkdir -p "$nginx_dir" 2>/dev/null
+    if [ ! -f "$conf_dst" ] || ! cmp -s "$conf_src" "$conf_dst" 2>/dev/null; then
+        if cp -f "$conf_src" "$conf_dst"; then
+            changed=1
+            log "Installed nginx snippet $conf_dst"
+        fi
+    fi
+
+    # 3b) desktop icon: config.ini points at /images/icons/<id>.png, which TOS
+    #     nginx serves from /usr/www/images/icons. TOS copies it there itself, but
+    #     on some builds only at boot, so keep a copy here too.
+    local icon_src="$APP_ROOT/images/icons/${MOD_NAME}.png"
+    local icon_dir="/usr/www/images/icons"
+    if [ -f "$icon_src" ]; then
+        if [ ! -d "$icon_dir" ] && [ -d /usr/www/images ]; then
+            mkdir -p "$icon_dir" 2>/dev/null
+        fi
+        if [ -d "$icon_dir" ] && { [ ! -f "$icon_dir/${MOD_NAME}.png" ] || ! cmp -s "$icon_src" "$icon_dir/${MOD_NAME}.png" 2>/dev/null; }; then
+            cp -f "$icon_src" "$icon_dir/${MOD_NAME}.png" && log "Installed desktop icon $icon_dir/${MOD_NAME}.png"
+        fi
+    fi
+
+    # 4) validate + reload nginx
+    #
+    # NOTE: `nginx -t` tests the WHOLE config. On some TOS builds nginx.conf
+    # includes a file that is currently missing (e.g. conf.d/TerraSync.conf),
+    # which makes the test fail for reasons unrelated to us. So never delete our
+    # snippet because of someone else's error: only remove it when the reported
+    # error actually points at our file.
+    local ng
+    if ng="$(find_nginx)"; then
+        local t_out
+        t_out="$("$ng" -t 2>&1)"
+        printf '%s\n' "$t_out" >> "$LOGFILE"
+
+        if printf '%s' "$t_out" | grep -q "$(basename "$conf_dst")"; then
+            log "nginx -t reports an error in $(basename "$conf_dst"); removing it"
+            rm -f "$conf_dst"
+            "$ng" -s reload >> "$LOGFILE" 2>&1
+            return 0
+        fi
+
+        # Unrelated failure: satisfy missing includes under conf.d with empty
+        # placeholders so nginx can be reloaded and the module gets served.
+        local f created=0
+        for f in $(printf '%s\n' "$t_out" | sed -n 's/.*open() "\([^"]*\)" failed.*/\1/p' | sort -u); do
+            case "$f" in
+                /etc/nginx/conf.d/*.conf)
+                    if [ ! -e "$f" ]; then
+                        if [ -L "$f" ]; then
+                            # Dangling symlink (e.g. left behind by a removed app):
+                            # drop the link; `include conf.d/*.conf` then skips it.
+                            rm -f "$f" 2>/dev/null && { created=1; log "Removed dangling nginx include: $f"; }
+                        else
+                            mkdir -p "$(dirname "$f")" 2>/dev/null
+                            if printf '# Placeholder created by Poznote: this include was missing.\n' > "$f" 2>/dev/null; then
+                                created=1
+                                log "Created missing nginx include placeholder: $f"
+                            fi
+                        fi
+                    fi
+                    ;;
+            esac
+        done
+        if [ "$created" -eq 1 ]; then
+            t_out="$("$ng" -t 2>&1)"
+            printf '%s\n' "$t_out" >> "$LOGFILE"
+        fi
+
+        if "$ng" -s reload >> "$LOGFILE" 2>&1; then
+            [ "$changed" -eq 1 ] && log "nginx reloaded"
+        else
+            log "nginx reload failed; snippet kept at $conf_dst"
+        fi
+    else
+        log "nginx binary not found; module registered but not reloaded"
+    fi
+}
+
+# Re-extract the web module from the shipped webui.bz2. TOS unpacks webui.bz2
+# into webui/ during install, but an in-place update ("install over") may leave
+# the old webui/ untouched. Doing it here keeps webui/ always in sync with the
+# package and makes module updates work without a clean reinstall.
+refresh_webui(){
+    local bz="$APP_ROOT/webui.bz2"
+    local dir="$APP_ROOT/webui"
+    [ -f "$bz" ] || return 0
+
+    local xzc=""
+    local c
+    for c in xz /usr/bin/xz /bin/xz /usr/local/bin/xz; do
+        if command -v "$c" >/dev/null 2>&1; then xzc="$c"; break; fi
+    done
+    if [ -z "$xzc" ] && command -v busybox >/dev/null 2>&1; then xzc="busybox xz"; fi
+    if [ -z "$xzc" ]; then
+        log "No xz tool found; leaving webui/ as is"
+        return 0
+    fi
+
+    local tmp="$APP_ROOT/.webui.new"
+    rm -rf "$tmp" 2>/dev/null
+    mkdir -p "$tmp" 2>/dev/null
+    if $xzc -dc "$bz" 2>>"$LOGFILE" | tar -xf - -C "$tmp" 2>>"$LOGFILE" && [ -f "$tmp/index.php" ]; then
+        mkdir -p "$dir" 2>/dev/null
+        cp -rf "$tmp"/. "$dir"/ 2>/dev/null
+        chmod 644 "$dir"/*.php 2>/dev/null
+        log "Refreshed webui/ from $(basename "$bz")"
+    else
+        log "Failed to extract $(basename "$bz"); webui/ left unchanged"
+    fi
+    rm -rf "$tmp" 2>/dev/null
+}
+
+_findPID(){
+    PID=""
+    if [ -f "$PIDFILE" ]; then
+        if start-stop-daemon --status --pidfile "$PIDFILE" > /dev/null 2>&1; then
+            PID=$(cat "$PIDFILE" 2>/dev/null)
+        else
+            rm -f "$PIDFILE"
+        fi
+    fi
+    if [ -z "$PID" ]; then
+        PID=$(pgrep -f "$PANEL_BIN" 2>/dev/null | head -n 1)
+    fi
+}
+
+start_panel(){
+    _findPID
+    if [ -n "$PID" ]; then
+        return 0
+    fi
+    if [ ! -x "$PANEL_BIN" ]; then
+        err "control panel binary not found: $PANEL_BIN"
+        return 1
+    fi
+    start-stop-daemon --start --make-pidfile --pidfile "$PIDFILE" \
+        -b --chdir "$BINDIR" \
+        --startas /bin/bash -- -c "exec $PANEL_BIN -listen 127.0.0.1:$POZNOTE_PANEL_PORT -compose '$COMPOSE_FILE' -project $PROJECT -data '$POZNOTE_DATA' >> $LOGFILE 2>&1"
+}
+
+stop_panel(){
+    start-stop-daemon --stop --pidfile "$PIDFILE" --remove-pidfile \
+        --oknodo --retry TERM/10/KILL/5 > /dev/null 2>&1
+    _findPID
+    if [ -n "$PID" ]; then
+        kill "$PID" 2>/dev/null
+        sleep 1
+    fi
+    [ -f "$PIDFILE" ] && rm -f "$PIDFILE"
+    return 0
+}
+
+wait_for_ready(){
+    local i=0
+    while [ $i -lt 15 ]; do
+        _findPID
+        if [ -n "$PID" ]; then
+            return 0
+        fi
+        sleep 1
+        i=$((i+1))
+    done
+    return 1
+}
+
+start(){
+    init_config_folder
+    get_vol_name >> "$LOGFILE" 2>&1
+    AddConfigFolder >> "$LOGFILE" 2>&1
+    setup_dirs
+    refresh_webui
+    register_web_module
+    if ! check_docker; then
+        log "Start skipped: Docker is not ready. Install/enable Docker (DockerEngine) in TOS App Center, then start Poznote again."
+        start_panel
+        echo "$MOD_NAME: containers were not started because Docker is not available."
+        return 1
+    fi
+
+    # Refuse to fight over a port: report who holds it and keep the control panel
+    # alive so the operator can pick another port there.
+    local ports_ok=1 missing=0 web_host mcp_host
+    check_ports || ports_ok=0
+
+    if [ "$ports_ok" -eq 1 ]; then
+        web_host=$(registry_host "$POZNOTE_IMAGE")
+        mcp_host=$(registry_host "$POZNOTE_MCP_IMAGE")
+        if ! image_present "$POZNOTE_IMAGE" || ! image_present "$POZNOTE_MCP_IMAGE"; then
+            if ! check_registry "$web_host" || ! check_registry "$mcp_host"; then
+                registry_error "${web_host:-$mcp_host}"
+                missing=1
+            fi
+        fi
+        if [ "$missing" -eq 0 ]; then
+            log "Starting containers ($COMPOSE_CMD) from $COMPOSE_FILE"
+            compose up -d --remove-orphans >> "$LOGFILE" 2>&1
+        else
+            log "Start skipped: images are missing locally and the registry is unreachable."
+        fi
+    else
+        log "Start skipped: port conflict (see the messages above)."
+    fi
+
+    start_panel
+    if wait_for_ready; then
+        log_success_msg "control panel started (pid $PID) on 127.0.0.1:$POZNOTE_PANEL_PORT"
+    else
+        log_failure_msg "control panel failed to start"
+    fi
+    echo "$MOD_NAME started."
+}
+
+stop(){
+    setup_dirs
+    stop_panel
+    if check_docker; then
+        log "Stopping containers"
+        compose stop >> "$LOGFILE" 2>&1
+    fi
+    echo "$MOD_NAME stopped."
+}
+
+status(){
+    echo "installed version: $VERSION"
+    setup_dirs
+    echo "ports: web $POZNOTE_PORT, mcp $POZNOTE_MCP_PORT (127.0.0.1), panel $POZNOTE_PANEL_PORT (127.0.0.1)"
+    ensure_docker_path >/dev/null 2>&1
+    if ! command -v docker >/dev/null 2>&1; then
+        echo "docker: NOT FOUND — install/enable Docker (DockerEngine) in TOS App Center"
+    fi
+    # Surface port conflicts straight in the panel's status box.
+    local p who
+    for p in "$POZNOTE_PORT" "$POZNOTE_MCP_PORT"; do
+        port_num "$p" || { echo "port $p: invalid"; continue; }
+        if port_in_use "$p" && ! port_published_by_us "$p"; then
+            who=$(port_owner "$p")
+            echo "port $p: BUSY${who:+ — $who} (pick another port in the control panel)"
+        fi
+    done
+    _findPID
+    if [ -n "$PID" ]; then
+        echo "control panel: running (pid $PID)"
+        RETVAL=0
+    else
+        echo "control panel: stopped"
+        RETVAL=3
+    fi
+    if check_docker; then
+        compose ps 2>/dev/null
+    fi
+}
+
+reload(){
+    stop
+    sleep 2
+    start
+}
+
+update(){
+    init_config_folder
+    get_vol_name >> "$LOGFILE" 2>&1
+    AddConfigFolder >> "$LOGFILE" 2>&1
+    setup_dirs
+    if ! check_docker; then
+        err "Update aborted: Docker is not ready."
+        return 1
+    fi
+    # A pull is pointless (and slow to fail) when the registry is unreachable.
+    local web_host mcp_host
+    web_host=$(registry_host "$POZNOTE_IMAGE")
+    mcp_host=$(registry_host "$POZNOTE_MCP_IMAGE")
+    if ! check_registry "$web_host" || ! check_registry "$mcp_host"; then
+        registry_error "${web_host:-$mcp_host}"
+        log "Update cancelled: registry unreachable."
+        return 1
+    fi
+    log "Pulling images ($COMPOSE_CMD)"
+    compose pull >> "$LOGFILE" 2>&1
+    log "Recreating containers"
+    compose up -d --remove-orphans >> "$LOGFILE" 2>&1
+    start_panel
+    echo "$MOD_NAME updated."
+}
+
+reset(){
+    # Non-destructive: recreate containers but keep the SQLite database/attachments.
+    setup_dirs
+    stop_panel
+    if check_docker; then
+        compose down >> "$LOGFILE" 2>&1
+    fi
+    sleep 1
+    start
+}
+
+inst_version(){ echo "installed version is $VERSION"; }
+
+# Exit status follows the reference package: RETVAL is only meaningful for
+# `status` (0 = running, 3 = stopped). start/stop/reload/update/reset stay 0 so
+# an unreachable registry or a busy port never makes TOS mark the install as
+# failed and drop the desktop icon — the reason is reported in the log/panel.
+RETVAL=0
+
+case "$1" in
+    start)       start ;;
+    stop)        stop ;;
+    reload)      reload ;;
+    update)      update ;;
+    status)      status ;;
+    reset)       reset ;;
+    clearlog)    : > "$LOGFILE"; echo "Log cleared." ;;
+    configdir)   resolve_modconfigpath; echo "$MODCONFIGPATH" ;;
+    ports)       setup_dirs; ports_state ;;
+    inst_version) inst_version ;;
+    dep_check)   checkdep ;;
+    *)
+        echo "Usage: $(basename $0) {start|stop|reload|update|status|reset|clearlog|configdir|ports|inst_version|dep_check}"
+        exit 1
+        ;;
+esac
+
+exit ${RETVAL}

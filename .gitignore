@@ -1,0 +1,26 @@
+# Transient build intermediates created by tools/build_tpk.ps1 (payload.tar / payload.tar.xz)
+tools/_build/
+
+# Built package artifacts — generate them with build_tpk.ps1 and attach to GitHub Releases
+*.tpk
+*.zip
+
+# Compiled helper tools (built on the fly into these folders)
+tools/**/*.exe
+!tools/xz/xz.exe
+
+# Upstream Poznote sources (place the release sources here; not part of the .tpk, ignored by git)
+sources/
+
+# Scratch
+_tmp_webui/
+AppDataLocalTemp/
+
+# Windows
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Editors
+.vscode/
+.idea/

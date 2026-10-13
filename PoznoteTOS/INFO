@@ -1,0 +1,16 @@
+1:folder:bin:
+1:folder:bin/compose:
+1:file:bin/compose/docker-compose.yml:e4b0629d9f0674542d1824c427ba57f3
+1:file:bin/Poznote.nginx.conf:4a5769cb5a8e0149fc21c6bd0f85e5f9
+1:folder:bin/program:
+1:file:bin/program/poznote-panel:5a3dffeedc9bea9525952bd07defb65c
+1:folder:functions:
+1:file:functions/dependapps.sh:599dbb4de4ee6a3e153bae703fb500cd
+1:folder:images:
+1:folder:images/icons:
+1:file:images/icons/Poznote.png:0712fdc3c32d51cfe540afc4f0274a86
+1:folder:init.d:
+1:file:init.d/service:6b8f11f0c63af7cbef50cbb5fff9fff2
+1:file:Poznote.lang:cb00e7956cfe9a76e4c4bdaece500ed3
+1:file:version:c543e1e453ab29374ed110b08f72549e
+1:file:webui.bz2:d4ab570216096c33a0c64b303e912608

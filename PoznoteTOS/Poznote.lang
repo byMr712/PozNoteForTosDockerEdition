@@ -1,0 +1,77 @@
+[en-us]
+name = "Poznote"
+auth = "Poznote"
+version = "6.117.0.0"
+descript = "Poznote is a self-hosted note-taking web app: notes, folders, tags, tasks, attachments, Markdown, full-text search, calendar, Git sync, AI assistant and PWA offline support, all stored in a single SQLite database on your NAS."
+
+[zh-cn]
+name = "Poznote"
+auth = "Poznote"
+version = "6.117.0.0"
+descript = "Poznote is a self-hosted note-taking web app: notes, folders, tags, tasks, attachments, Markdown, full-text search, calendar, Git sync, AI assistant and PWA offline support, all stored in a single SQLite database on your NAS."
+
+[zh-hk]
+name = "Poznote"
+auth = "Poznote"
+version = "6.117.0.0"
+descript = "Poznote is a self-hosted note-taking web app: notes, folders, tags, tasks, attachments, Markdown, full-text search, calendar, Git sync, AI assistant and PWA offline support, all stored in a single SQLite database on your NAS."
+
+[ja-jp]
+name = "Poznote"
+auth = "Poznote"
+version = "6.117.0.0"
+descript = "Poznote is a self-hosted note-taking web app: notes, folders, tags, tasks, attachments, Markdown, full-text search, calendar, Git sync, AI assistant and PWA offline support, all stored in a single SQLite database on your NAS."
+
+[de-de]
+name = "Poznote"
+auth = "Poznote"
+version = "6.117.0.0"
+descript = "Poznote is a self-hosted note-taking web app: notes, folders, tags, tasks, attachments, Markdown, full-text search, calendar, Git sync, AI assistant and PWA offline support, all stored in a single SQLite database on your NAS."
+
+[fr-fr]
+name = "Poznote"
+auth = "Poznote"
+version = "6.117.0.0"
+descript = "Poznote is a self-hosted note-taking web app: notes, folders, tags, tasks, attachments, Markdown, full-text search, calendar, Git sync, AI assistant and PWA offline support, all stored in a single SQLite database on your NAS."
+
+[it-it]
+name = "Poznote"
+auth = "Poznote"
+version = "6.117.0.0"
+descript = "Poznote is a self-hosted note-taking web app: notes, folders, tags, tasks, attachments, Markdown, full-text search, calendar, Git sync, AI assistant and PWA offline support, all stored in a single SQLite database on your NAS."
+
+[es-es]
+name = "Poznote"
+auth = "Poznote"
+version = "6.117.0.0"
+descript = "Poznote is a self-hosted note-taking web app: notes, folders, tags, tasks, attachments, Markdown, full-text search, calendar, Git sync, AI assistant and PWA offline support, all stored in a single SQLite database on your NAS."
+
+[ko-kr]
+name = "Poznote"
+auth = "Poznote"
+version = "6.117.0.0"
+descript = "Poznote is a self-hosted note-taking web app: notes, folders, tags, tasks, attachments, Markdown, full-text search, calendar, Git sync, AI assistant and PWA offline support, all stored in a single SQLite database on your NAS."
+
+[hu-hu]
+name = "Poznote"
+auth = "Poznote"
+version = "6.117.0.0"
+descript = "Poznote is a self-hosted note-taking web app: notes, folders, tags, tasks, attachments, Markdown, full-text search, calendar, Git sync, AI assistant and PWA offline support, all stored in a single SQLite database on your NAS."
+
+[pl-pl]
+name = "Poznote"
+auth = "Poznote"
+version = "6.117.0.0"
+descript = "Poznote is a self-hosted note-taking web app: notes, folders, tags, tasks, attachments, Markdown, full-text search, calendar, Git sync, AI assistant and PWA offline support, all stored in a single SQLite database on your NAS."
+
+[ru-ru]
+name = "Poznote"
+auth = "Poznote"
+version = "6.117.0.0"
+descript = "Poznote — self-hosted веб-приложение для заметок: заметки, папки, теги, задачи, вложения, Markdown, полнотекстовый поиск, календарь, Git-синхронизация, AI-помощник и офлайн-режим PWA. Все данные хранятся в одной базе SQLite на вашем NAS."
+
+[tr-tr]
+name = "Poznote"
+auth = "Poznote"
+version = "6.117.0.0"
+descript = "Poznote is a self-hosted note-taking web app: notes, folders, tags, tasks, attachments, Markdown, full-text search, calendar, Git sync, AI assistant and PWA offline support, all stored in a single SQLite database on your NAS."
