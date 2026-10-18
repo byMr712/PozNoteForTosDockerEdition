@@ -91,8 +91,18 @@ foreach ($item in $allFiles) {
     }
 }
 $infoText = ($infoLines -join "`n") + "`n"
-[System.IO.File]::WriteAllText((Join-Path $PkgDir 'INFO'), $infoText, [System.Text.UTF8Encoding]::new($false))
-Write-Host "INFO regenerated: $((Get-Item (Join-Path $PkgDir 'INFO')).Length) bytes ($($infoLines.Count) entries)"
+$infoPath = Join-Path $PkgDir 'INFO'
+$infoBytes = [System.Text.UTF8Encoding]::new($false).GetBytes($infoText)
+for ($i = 0; $i -lt 5; $i++) {
+    try {
+        [System.IO.File]::WriteAllBytes($infoPath, $infoBytes)
+        break
+    } catch {
+        if ($i -eq 4) { throw }
+        Start-Sleep -Milliseconds 300
+    }
+}
+Write-Host "INFO regenerated: $((Get-Item $infoPath).Length) bytes ($($infoLines.Count) entries)"
 
 # ---- 2. Locate tools -------------------------------------------------------------
 $go = Get-Command go -ErrorAction SilentlyContinue

@@ -1,77 +1,77 @@
 [en-us]
 name = "Poznote"
 auth = "Poznote"
-version = "6.117.0.10"
+version = "1.1"
 descript = "Poznote is a self-hosted note-taking web app: notes, folders, tags, tasks, attachments, Markdown, full-text search, calendar, Git sync, AI assistant and PWA offline support, all stored in a single SQLite database on your NAS."
 
 [zh-cn]
 name = "Poznote"
 auth = "Poznote"
-version = "6.117.0.10"
+version = "1.1"
 descript = "Poznote 是一款自托管的笔记 Web 应用：笔记、文件夹、标签、任务、附件、Markdown、全文搜索、日历、Git 同步、AI 助手和 PWA 离线支持，所有数据都存储在 NAS 上的一个 SQLite 数据库中。"
 
 [zh-hk]
 name = "Poznote"
 auth = "Poznote"
-version = "6.117.0.10"
+version = "1.1"
 descript = "Poznote 是一款自託管的筆記 Web 應用程式：筆記、資料夾、標籤、任務、附件、Markdown、全文搜尋、行事曆、Git 同步、AI 助理和 PWA 離線支援，所有資料都儲存在 NAS 上的單一 SQLite 資料庫中。"
 
 [ja-jp]
 name = "Poznote"
 auth = "Poznote"
-version = "6.117.0.10"
+version = "1.1"
 descript = "Poznote はセルフホスト型のノート Web アプリです。ノート、フォルダー、タグ、タスク、添付ファイル、Markdown、全文検索、カレンダー、Git 同期、AI アシスタント、PWA オフライン対応を備え、すべてのデータは NAS 上の単一の SQLite データベースに保存されます。"
 
 [de-de]
 name = "Poznote"
 auth = "Poznote"
-version = "6.117.0.10"
+version = "1.1"
 descript = "Poznote ist eine selbst gehostete Web-App für Notizen: Notizen, Ordner, Tags, Aufgaben, Anhänge, Markdown, Volltextsuche, Kalender, Git-Synchronisierung, KI-Assistent und PWA-Offline-Unterstützung — alle Daten liegen in einer einzigen SQLite-Datenbank auf Ihrem NAS."
 
 [fr-fr]
 name = "Poznote"
 auth = "Poznote"
-version = "6.117.0.10"
+version = "1.1"
 descript = "Poznote est une application web de prise de notes auto-hébergée : notes, dossiers, étiquettes, tâches, pièces jointes, Markdown, recherche plein texte, calendrier, synchronisation Git, assistant IA et prise en charge hors ligne PWA. Toutes les données sont stockées dans une seule base SQLite sur votre NAS."
 
 [it-it]
 name = "Poznote"
 auth = "Poznote"
-version = "6.117.0.10"
+version = "1.1"
 descript = "Poznote è un'app web self-hosted per prendere appunti: note, cartelle, tag, attività, allegati, Markdown, ricerca full-text, calendario, sincronizzazione Git, assistente AI e supporto offline PWA. Tutti i dati sono salvati in un unico database SQLite sul tuo NAS."
 
 [es-es]
 name = "Poznote"
 auth = "Poznote"
-version = "6.117.0.10"
+version = "1.1"
 descript = "Poznote es una aplicación web de notas autoalojada: notas, carpetas, etiquetas, tareas, adjuntos, Markdown, búsqueda de texto completo, calendario, sincronización con Git, asistente de IA y soporte sin conexión PWA. Todos los datos se guardan en una sola base de datos SQLite en tu NAS."
 
 [ko-kr]
 name = "Poznote"
 auth = "Poznote"
-version = "6.117.0.10"
+version = "1.1"
 descript = "Poznote는 자체 호스팅 노트 웹 앱입니다. 노트, 폴더, 태그, 작업, 첨부 파일, Markdown, 전체 텍스트 검색, 캘린더, Git 동기화, AI 어시스턴트, PWA 오프라인 지원을 제공하며 모든 데이터는 NAS의 단일 SQLite 데이터베이스에 저장됩니다."
 
 [hu-hu]
 name = "Poznote"
 auth = "Poznote"
-version = "6.117.0.10"
+version = "1.1"
 descript = "A Poznote egy saját szerveren futó jegyzetelő webalkalmazás: jegyzetek, mappák, címkék, feladatok, mellékletek, Markdown, teljes szöveges keresés, naptár, Git-szinkronizálás, AI-asszisztens és PWA offline támogatás — minden adat egyetlen SQLite adatbázisban tárolódik a NAS készülékén."
 
 [pl-pl]
 name = "Poznote"
 auth = "Poznote"
-version = "6.117.0.10"
+version = "1.1"
 descript = "Poznote to samodzielnie hostowana aplikacja webowa do notatek: notatki, foldery, tagi, zadania, załączniki, Markdown, wyszukiwanie pełnotekstowe, kalendarz, synchronizacja Git, asystent AI i tryb offline PWA. Wszystkie dane są przechowywane w jednej bazie SQLite na Twoim NAS."
 
 [ru-ru]
 name = "Poznote"
 auth = "Poznote"
-version = "6.117.0.10"
+version = "1.1"
 descript = "Poznote — self-hosted веб-приложение для заметок: заметки, папки, теги, задачи, вложения, Markdown, полнотекстовый поиск, календарь, Git-синхронизация, AI-помощник и офлайн-режим PWA. Все данные хранятся в одной базе SQLite на вашем NAS."
 
 [tr-tr]
 name = "Poznote"
 auth = "Poznote"
-version = "6.117.0.10"
+version = "1.1"
 descript = "Poznote, kendi sunucunuzda barındırabileceğiniz bir not web uygulamasıdır: notlar, klasörler, etiketler, görevler, ekler, Markdown, tam metin arama, takvim, Git eşitleme, yapay zekâ asistanı ve PWA çevrimdışı desteği. Tüm veriler NAS cihazınızdaki tek bir SQLite veritabanında saklanır."

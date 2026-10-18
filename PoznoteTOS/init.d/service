@@ -2,7 +2,7 @@
 # Poznote TOS service (Docker wrapper + control panel)
 # start|stop|reload|update|status|reset|inst_version|dep_check
 
-VERSION="6.117.0.10"
+VERSION="1.1"
 MOD_NAME=Poznote
 
 ROOTUSER=$(id -un)
@@ -562,9 +562,29 @@ stop(){
     echo "$MOD_NAME stopped."
 }
 
+get_app_version(){
+    ensure_docker_path >/dev/null 2>&1
+    command -v docker >/dev/null 2>&1 || return 1
+    local v=""
+    # 1. Container config label
+    v=$(docker inspect --format '{{ with .Config.Labels }}{{ with index . "version" }}{{ . }}{{ end }}{{ end }}' poznote 2>/dev/null | tr -d '\r\n')
+    # 2. Image config label if container not found
+    if [ -z "$v" ]; then
+        local img="${POZNOTE_IMAGE:-ghcr.io/timothepoznanski/poznote}:${POZNOTE_IMAGE_TAG:-6}"
+        v=$(docker inspect --format '{{ with .Config.Labels }}{{ with index . "version" }}{{ . }}{{ end }}{{ end }}' "$img" 2>/dev/null | tr -d '\r\n')
+    fi
+    # 3. Fallback: file inside running container
+    if [ -z "$v" ]; then
+        v=$(docker exec poznote cat /var/www/html/version.txt 2>/dev/null | tr -d '\r\n')
+    fi
+    [ -n "$v" ] && echo "$v"
+}
+
 status(){
-    echo "installed version: $VERSION"
     setup_dirs
+    local app_ver
+    app_ver=$(get_app_version)
+    echo "installed version: ${app_ver:-$VERSION}"
     echo "ports: web $POZNOTE_PORT, mcp $POZNOTE_MCP_PORT (127.0.0.1), panel $POZNOTE_PANEL_PORT (127.0.0.1)"
     ensure_docker_path >/dev/null 2>&1
     if ! command -v docker >/dev/null 2>&1; then
