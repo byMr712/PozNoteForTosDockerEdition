@@ -192,6 +192,7 @@ $POZ_STRINGS = array(
         'notice_hide' => 'Нажмите, чтобы скрыть',
         'error' => 'Ошибка.',
         'ajax_fail' => 'Не удалось выполнить запрос: {0}',
+        'err_op_busy' => 'Другая операция уже выполняется. Пожалуйста, подождите.',
     ),
     'en' => array(
         'page_title' => 'Poznote — control panel',
@@ -277,6 +278,7 @@ $POZ_STRINGS = array(
         'notice_hide' => 'Click to hide',
         'error' => 'Error.',
         'ajax_fail' => 'Request failed: {0}',
+        'err_op_busy' => 'Another operation is already in progress. Please wait.',
     ),
 );
 
@@ -627,23 +629,31 @@ if ($action === 'saveports') {
             }
         } else {
             $output = poz_run($INITD . ' reload');
-            $ENV_VARS = poz_env_read($ENV_FILE);
-            $APP_PORT = $web;
-            $MCP_PORT = $mcp;
-            $notice = poz_t('ok_ports_saved', array($web, $mcp));
-            $noticeKind = 'ok';
-            if ($isAjax) {
-                $status = poz_status($INITD);
-                poz_json(array(
-                    'ok'      => true,
-                    'action'  => $action,
-                    'message' => $notice,
-                    'output'  => $output,
-                    'ports'   => array('web' => (int)$web, 'mcp' => (int)$mcp),
-                    'running' => poz_running($status),
-                    'status'  => $status,
-                    'log'     => poz_log_tail($LOG_FILE, $LOG_LINES),
-                ));
+            if (strpos($output, 'Another operation is already in progress') !== false) {
+                $notice = poz_t('err_op_busy');
+                $noticeKind = 'err';
+                if ($isAjax) {
+                    poz_json(array('ok' => false, 'action' => $action, 'message' => $notice, 'output' => $output));
+                }
+            } else {
+                $ENV_VARS = poz_env_read($ENV_FILE);
+                $APP_PORT = $web;
+                $MCP_PORT = $mcp;
+                $notice = poz_t('ok_ports_saved', array($web, $mcp));
+                $noticeKind = 'ok';
+                if ($isAjax) {
+                    $status = poz_status($INITD);
+                    poz_json(array(
+                        'ok'      => true,
+                        'action'  => $action,
+                        'message' => $notice,
+                        'output'  => $output,
+                        'ports'   => array('web' => (int)$web, 'mcp' => (int)$mcp),
+                        'running' => poz_running($status),
+                        'status'  => $status,
+                        'log'     => poz_log_tail($LOG_FILE, $LOG_LINES),
+                    ));
+                }
             }
         }
     }
@@ -666,19 +676,32 @@ if ($action !== '' && $action !== 'saveports') {
 
     if ($cmd !== '') {
         $output = poz_run($INITD . ' ' . $cmd);
-        $notice = $msg;
-        $noticeKind = 'ok';
-        if ($isAjax) {
-            $status = poz_status($INITD);
-            poz_json(array(
-                'ok'      => true,
-                'action'  => $action,
-                'message' => $msg,
-                'output'  => $output,
-                'running' => poz_running($status),
-                'status'  => $status,
-                'log'     => poz_log_tail($LOG_FILE, $LOG_LINES),
-            ));
+        if (strpos($output, 'Another operation is already in progress') !== false) {
+            $notice = poz_t('err_op_busy');
+            $noticeKind = 'err';
+            if ($isAjax) {
+                poz_json(array(
+                    'ok'      => false,
+                    'action'  => $action,
+                    'message' => $notice,
+                    'output'  => $output,
+                ));
+            }
+        } else {
+            $notice = $msg;
+            $noticeKind = 'ok';
+            if ($isAjax) {
+                $status = poz_status($INITD);
+                poz_json(array(
+                    'ok'      => true,
+                    'action'  => $action,
+                    'message' => $msg,
+                    'output'  => $output,
+                    'running' => poz_running($status),
+                    'status'  => $status,
+                    'log'     => poz_log_tail($LOG_FILE, $LOG_LINES),
+                ));
+            }
         }
     } elseif ($isAjax) {
         poz_json(array('ok' => false, 'action' => $action, 'message' => $notice));
@@ -1087,6 +1110,7 @@ function T(key, args) {
      так выбор сохраняется и применяется сразу, без правок в PHP. */
   if (langBtn) {
     langBtn.addEventListener('click', function () {
+      if (busy) { return; }
       var next = (POZ_LANG === 'ru') ? 'en' : 'ru';
       var d = new Date();
       d.setTime(d.getTime() + 365 * 24 * 60 * 60 * 1000);
@@ -1249,6 +1273,7 @@ function T(key, args) {
     busy = on;
     buttons.forEach(function (b) { b.disabled = on; });
     refreshBtn.disabled = on;
+    if (langBtn) { langBtn.disabled = on; }
     if (on) {
       pText.textContent = T('progress_running', [label || T('op_fallback')]);
       pHint.textContent = hint || '';

@@ -2,7 +2,7 @@
 # Poznote TOS service (Docker wrapper + control panel)
 # start|stop|reload|update|status|reset|inst_version|dep_check
 
-VERSION="1.1"
+VERSION="1.2"
 MOD_NAME=Poznote
 
 ROOTUSER=$(id -un)
@@ -477,7 +477,7 @@ start_panel(){
     fi
     start-stop-daemon --start --make-pidfile --pidfile "$PIDFILE" \
         -b --chdir "$BINDIR" \
-        --startas /bin/bash -- -c "exec $PANEL_BIN -listen 127.0.0.1:$POZNOTE_PANEL_PORT -compose '$COMPOSE_FILE' -project $PROJECT -data '$POZNOTE_DATA' >> $LOGFILE 2>&1"
+        --startas /bin/bash -- -c "exec 200>&- 2>/dev/null; exec $PANEL_BIN -listen 127.0.0.1:$POZNOTE_PANEL_PORT -compose '$COMPOSE_FILE' -project $PROJECT -data '$POZNOTE_DATA' >> $LOGFILE 2>&1"
 }
 
 stop_panel(){
@@ -657,6 +657,34 @@ reset(){
 
 inst_version(){ echo "installed version is $VERSION"; }
 
+# Serialize mutating operations to avoid concurrent Docker Compose conflicts.
+with_op_lock(){
+    mkdir -p "$RUNDIR" 2>/dev/null
+    local lockfile="$RUNDIR/${MOD_NAME}_op.lock"
+    local fl=""
+    local c
+    for c in flock /usr/bin/flock /bin/flock; do
+        if command -v "$c" >/dev/null 2>&1; then fl="$c"; break; fi
+    done
+    if [ -z "$fl" ] && command -v busybox >/dev/null 2>&1; then
+        if busybox flock -h >/dev/null 2>&1; then fl="busybox flock"; fi
+    fi
+    if [ -n "$fl" ]; then
+        exec 200>"$lockfile"
+        if ! $fl -n 200; then
+            err "Another operation is already in progress. Please wait."
+            exec 200>&- 2>/dev/null
+            return 1
+        fi
+    fi
+    "$@"
+    local rc=$?
+    if [ -n "$fl" ]; then
+        exec 200>&- 2>/dev/null
+    fi
+    return $rc
+}
+
 # Exit status follows the reference package: RETVAL is only meaningful for
 # `status` (0 = running, 3 = stopped). start/stop/reload/update/reset stay 0 so
 # an unreachable registry or a busy port never makes TOS mark the install as
@@ -664,12 +692,12 @@ inst_version(){ echo "installed version is $VERSION"; }
 RETVAL=0
 
 case "$1" in
-    start)       start ;;
-    stop)        stop ;;
-    reload)      reload ;;
-    update)      update ;;
+    start)       with_op_lock start ;;
+    stop)        with_op_lock stop ;;
+    reload)      with_op_lock reload ;;
+    update)      with_op_lock update ;;
     status)      status ;;
-    reset)       reset ;;
+    reset)       with_op_lock reset ;;
     clearlog)    : > "$LOGFILE"; echo "Log cleared." ;;
     configdir)   resolve_modconfigpath; echo "$MODCONFIGPATH" ;;
     ports)       setup_dirs; ports_state ;;
